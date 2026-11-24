@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 3
+- **Revize:** 4
 
 ## 1. Účel dokumentu
 
@@ -17,56 +17,58 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 
 ### 2.1 Potvrzený rozsah
 
-- Vstupem dopředného výpočtu je skalár `x`, výstupem odhad `ŷ`.
-- Model má dva parametry typu `float`: sklon `a` a posun `b`.
-- Dopředný výpočet vychází ze vztahu `ŷ = x · a + b`; vztah `ŷ = x · a` je jeho případ s `b = 0`.
+- Vstupem dopředného výpočtu je skalár $x$, výstupem odhad $\hat y$.
+- Model má dva parametry typu `float`: sklon $a$ a posun $b$.
+- Dopředný výpočet vychází ze vztahu $\hat y=ax+b$; vztah $\hat y=ax$ je jeho případ s $b=0$.
 - Projekt používá C bez frameworku pro strojové učení a cílem je úsporný výpočet na dostupném hardwaru.
 - Zdrojový kód, veřejné rozhraní, testy a platformní pravidla překladu budou oddělené podle kořenového `AGENTS.md`.
 
 ### 2.2 Zatím neurčený rozsah
 
-Výchozí metodou učení je SGD se čtvercovou ztrátou; `a` i `b` se mají učit. Dosud nejsou určeny původ a reprezentace bodů, pořadí jejich zpracování, rychlost učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
+Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Dosud nejsou určeny původ a reprezentace bodů, pořadí jejich zpracování, rychlost učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
 
 ## 3. Terminologie a jednotky
 
 | Symbol | Význam | Jednotka |
 |---|---|---|
-| `x` | Vstupní souřadnice bodu. | Podle budoucích dat. |
-| `y` | Pozorovaná výstupní souřadnice bodu. | Podle budoucích dat. |
-| `ŷ` | Odhad výstupu vrácený modelem. | Stejná jako `y`. |
-| `a` | Sklon přímky, váha násobící vstup. | Jednotka `y` dělená jednotkou `x`. |
-| `b` | Posun přímky na výstupní ose. | Stejná jako `y`. |
-| Reziduum | Rozdíl mezi pozorovaným a odhadnutým výstupem. | Stejná jako `y`. |
+| $x$ | Vstupní souřadnice bodu. | Podle budoucích dat. |
+| $y$ | Pozorovaná výstupní souřadnice bodu. | Podle budoucích dat. |
+| $\hat y$ | Odhad výstupu vrácený modelem. | Stejná jako $y$. |
+| $a$ | Sklon přímky, váha násobící vstup. | Jednotka $y$ dělená jednotkou $x$. |
+| $b$ | Posun přímky na výstupní ose. | Stejná jako $y$. |
+| Reziduum | Rozdíl mezi pozorovaným a odhadnutým výstupem. | Stejná jako $y$. |
 
 ## 4. Teorie modelu a koncept učení
 
 Přímka v této úloze převádí jeden vstup na jeden odhad:
 
-```text
-ŷ(x) = a · x + b
-```
+$$
+\hat y(x)=ax+b
+$$
 
-Pro `b = 0` prochází přímka počátkem souřadnic. Změna `a` mění její sklon, změna `b` ji posouvá. Při prokládání bodů je třeba určit, jak měřit rozdíl mezi `y` a `ŷ` a podle jakého pravidla měnit parametry. Tato dvě rozhodnutí nejsou vlastností samotné dopředné funkce.
+Pro $b=0$ prochází přímka počátkem souřadnic. Změna $a$ mění její sklon, změna $b$ ji posouvá. Při prokládání bodů je třeba určit, jak měřit rozdíl mezi $y$ a $\hat y$ a podle jakého pravidla měnit parametry. Tato dvě rozhodnutí nejsou vlastností samotné dopředné funkce.
 
-Jde o afinní transformaci s identickou aktivací. Sigmoidový neuron používá tutéž transformaci před nelineární aktivací `σ(a · x + b)`; bez aktivace je výstupem přímo `a · x + b`. Myšlenka učení z gradientu se přenáší i na neuronové sítě, ale konkrétní derivace a chování více vrstev se po přidání aktivací mění.
+Jde o afinní transformaci s identickou aktivací. Sigmoidový neuron používá tutéž transformaci před nelineární aktivací $\sigma(ax+b)$; bez aktivace je výstupem přímo $ax+b$. Myšlenka učení z gradientu se přenáší i na neuronové sítě, ale konkrétní derivace a chování více vrstev se po přidání aktivací mění.
 
-Pro `N > 0` trénovacích bodů je zvoleným výchozím měřítkem střední čtvercová chyba:
+Pro $N>0$ trénovacích bodů je zvoleným výchozím měřítkem střední čtvercová chyba:
 
-```text
-MSE = (1 / N) · Σᵢ (ŷᵢ - yᵢ)²
-ŷᵢ = a · xᵢ + b
-```
+$$
+\hat y_i=ax_i+b,\qquad
+\operatorname{MSE}(a,b)=\frac{1}{N}\sum_{i=1}^{N}(\hat y_i-y_i)^2
+$$
 
-Pro SGD s jedním bodem lze použít čtvercovou ztrátu `eᵢ = (ŷᵢ - yᵢ)²`. Její gradient v aktuálních hodnotách parametrů je:
+Pro SGD s jedním bodem je čtvercová ztráta $e_i(a,b)=(\hat y_i-y_i)^2$. Složky gradientu v aktuálních hodnotách parametrů a aktualizační krok jsou:
 
-```text
-g_a = ∂eᵢ/∂a = 2 · (ŷᵢ - yᵢ) · xᵢ
-g_b = ∂eᵢ/∂b = 2 · (ŷᵢ - yᵢ)
-a ← a - η · g_a
-b ← b - η · g_b
-```
+$$
+\begin{aligned}
+g_a &= \frac{\partial e_i}{\partial a}=2(\hat y_i-y_i)x_i,\\
+g_b &= \frac{\partial e_i}{\partial b}=2(\hat y_i-y_i),\\
+a' &= a-\eta g_a,\\
+b' &= b-\eta g_b.
+\end{aligned}
+$$
 
-`η > 0` je rychlost učení. Gradient vyjadřuje místní sklon ztráty v současném bodě `(a, b)`, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném `η`; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci by byl dávkový gradientní sestup. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
+$\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadřuje místní sklon ztráty v současném bodě $(a,b)$, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném $\eta$; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci by byl dávkový gradientní sestup. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
 
 ## 5. Požadavky na architekturu řešení
 
@@ -83,7 +85,7 @@ Zamýšlené veřejné rozhraní obsahuje funkci `regression_forward`, která pr
 
 Veřejný název typu je `Regression`. Přesný podpis dopředné funkce včetně případného `const` ukazatele se potvrdí před vytvořením veřejné hlavičky.
 
-Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat `a`, `b` a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. `a` a `b` jsou učitelné parametry modelu; rychlost učení `η` a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
+Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat $a$, $b$ a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. $a$ a $b$ jsou učitelné parametry modelu; rychlost učení $\eta$ a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
 
 Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows se připravují názvy `win32_x86_64` a jeho alias `win_32_x86_64`; oba mají používat stejná pravidla překladu. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
@@ -98,15 +100,15 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | ID | Požadavek | Stav |
 |---|---|---|
 | LR-001 | Typ `Regression` musí uchovávat `a` a `b` jako `float`. | Odvozeno přímo ze zadání. |
-| LR-002 | Dopředná funkce musí vrátit `a · x + b`. | Odvozeno přímo ze zadání. |
-| LR-003 | Varianta bez posunu musí být reprezentovatelná jako `b = 0`. | Odvozeno přímo ze zadání. |
+| LR-002 | Dopředná funkce musí vrátit $\hat y=ax+b$. | Odvozeno přímo ze zadání. |
+| LR-003 | Varianta bez posunu musí být reprezentovatelná jako $b=0$. | Odvozeno přímo ze zadání. |
 | LR-004 | Produkční kód nesmí záviset na frameworku pro strojové učení. | Potvrzené pravidlo repozitáře. |
 | LR-005 | Jednotkové testy musí ověřit dopřednou funkci a později zvolenou metodu učení. | Potvrzené pravidlo repozitáře. |
 | LR-006 | Volba trénovacího algoritmu a akceptačních kritérií musí být schválena před jejich implementací. | Potvrzené pravidlo repozitáře. |
 | LR-007 | Překlad musí podporovat `linux_x86_64` a Windows pod názvy `win32_x86_64` a `win_32_x86_64`; oba názvy Windows musí vést ke stejným pravidlům. | Požadavek na připravovanou implementaci. |
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
-| LR-009 | Ztráta pro `N > 0` bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu `ŷ - y`. | Potvrzený výchozí směr; numerická smlouva se doplní. |
-| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči `a` a `b` a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
+| LR-009 | Ztráta pro $N>0$ bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu $\hat y_i-y_i$. | Potvrzený výchozí směr; numerická smlouva se doplní. |
+| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
 
 Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
@@ -114,11 +116,11 @@ Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou do
 
 | ID | Požadavky | Vstup / podmínka | Očekávaný výsledek | Stav |
 |---|---|---|---|---|
-| LR-T01 | LR-001, LR-002 | `a = 2`, `b = 1`, `x = 3` | `ŷ = 7` | Plánováno; kód neexistuje. |
-| LR-T02 | LR-002, LR-003 | `a = 2`, `b = 0`, `x = 3` | `ŷ = 6` | Plánováno; kód neexistuje. |
-| LR-T03 | LR-002 | `a = -1`, `b = 2`, `x = -2` | `ŷ = 4` | Plánováno; kód neexistuje. |
-| LR-T04 | LR-009 | Dva body s rozdíly `ŷ - y` rovnými `-1` a `-2` | `MSE = (1 + 4) / 2 = 2,5` | Plánováno; kód neexistuje. |
-| LR-T05 | LR-010 | `a = b = 0`, `x = 2`, `y = 1`, `η = 0,1` | `g_a = -4`, `g_b = -2`; po jednom kroku `a = 0,4`, `b = 0,2` | Plánováno; kód neexistuje. |
+| LR-T01 | LR-001, LR-002 | $a=2$, $b=1$, $x=3$ | $\hat y=7$ | Plánováno; kód neexistuje. |
+| LR-T02 | LR-002, LR-003 | $a=2$, $b=0$, $x=3$ | $\hat y=6$ | Plánováno; kód neexistuje. |
+| LR-T03 | LR-002 | $a=-1$, $b=2$, $x=-2$ | $\hat y=4$ | Plánováno; kód neexistuje. |
+| LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Plánováno; kód neexistuje. |
+| LR-T05 | LR-010 | $a=b=0$, $x=2$, $y=1$, $\eta=0{,}1$ | $g_a=-4$, $g_b=-2$; po jednom kroku $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
 
 Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a oba názvy Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
@@ -126,9 +128,9 @@ Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou 
 
 | ID | Otázka | Možnosti k diskusi |
 |---|---|---|
-| LR-OP-01 | Jaká je ztráta pro jeden krok SGD? | Rozhodnuto: `eᵢ = (ŷᵢ - yᵢ)²`, tedy MSE pro jeden bod. |
+| LR-OP-01 | Jaká je ztráta pro jeden krok SGD? | Rozhodnuto: $e_i=(\hat y_i-y_i)^2$, tedy MSE pro jeden bod. |
 | LR-OP-02 | Jak řídit průchod SGD? | Pořadí bodů, pevná či proměnná rychlost učení, počet epoch, kritérium ukončení a případné mini dávky. |
-| LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: `a` i `b`; `b = 0` lze použít jako počáteční hodnotu. |
+| LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: $a$ i $b$; $b=0$ lze použít jako počáteční hodnotu. |
 | LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Pevná testovací sada, pole předaná API, soubor či generátor. |
 | LR-OP-05 | Jaký je přesný veřejný podpis dopředné funkce? | Rozhodnout o `const` u vstupního ukazatele. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
@@ -155,18 +157,18 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 ## 12. Vysvětlující slovník odborných pojmů
 
 - **Lineární regrese:** Hledání přímky, která pro dané body popisuje vztah mezi jednou vstupní a jednou výstupní hodnotou.
-- **Sklon (`a`):** Parametr určující, o kolik se odhad `ŷ` změní při jednotkové změně `x`.
-- **Posun (`b`):** Hodnota odhadu v bodě `x = 0`; při nulovém posunu přímka prochází počátkem.
-- **Dopředný výpočet:** Použití již zadaných parametrů modelu pro výpočet `ŷ` bez jejich změny.
-- **Učení parametrů:** Postup, který z trénovacích bodů nastavuje `a` a případně `b` podle teprve zvoleného kritéria.
+- **Sklon ($a$):** Parametr určující, o kolik se odhad $\hat y$ změní při jednotkové změně $x$.
+- **Posun ($b$):** Hodnota odhadu v bodě $x=0$; při nulovém posunu přímka prochází počátkem.
+- **Dopředný výpočet:** Použití již zadaných parametrů modelu pro výpočet $\hat y$ bez jejich změny.
+- **Učení parametrů:** Postup, který z trénovacích bodů nastavuje $a$ a $b$ podle zvoleného kritéria.
 - **Ztrátová funkce:** Číselné měřítko rozdílu mezi pozorovanými a odhadnutými hodnotami, které má učení zmenšovat.
-- **Reziduum:** Rozdíl `y - ŷ` pro jeden bod; jeho význam závisí na zvolené ztrátě.
+- **Reziduum:** Rozdíl $y_i-\hat y_i$ pro jeden bod; jeho význam závisí na zvolené ztrátě.
 - **Analytické nejmenší čtverce:** Výpočet parametrů ze souhrnných součtů bodů pro čtvercovou chybu za platných předpokladů.
 - **Gradientní sestup:** Opakované posouvání parametrů proti gradientu ztráty; vyžaduje pravidlo kroku a ukončení.
 - **SGD:** Stochastický gradientní sestup; zde aktualizace parametrů podle gradientu ztráty jednoho trénovacího bodu.
-- **Gradient:** Vektor parciálních derivací ztráty podle parametrů `a` a `b` v jejich aktuálních hodnotách.
+- **Gradient:** Vektor parciálních derivací ztráty podle parametrů $a$ a $b$ v jejich aktuálních hodnotách.
 - **MSE:** Střední čtvercová chyba; průměr druhých mocnin rozdílů mezi odhadem a pozorováním.
-- **Hyperparametr:** Hodnota určující postup učení, například rychlost učení `η`; není přímo součástí modelové přímky.
+- **Hyperparametr:** Hodnota určující postup učení, například rychlost učení $\eta$; není přímo součástí modelové přímky.
 - **Sigmoidová aktivace:** Nelineární funkce aplikovaná na vážený součet neuronu; v této regresi se nepoužívá.
-- **Identická aktivace:** Výstup se rovná vstupu aktivace, proto model vrací přímo `a · x + b`.
+- **Identická aktivace:** Výstup se rovná vstupu aktivace, proto model vrací přímo $ax+b$.
 - **Referenční sekvenční chování:** Jednovláknový výsledek určený pro kontrolu budoucích výkonnostních změn.
