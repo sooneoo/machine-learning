@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 2
+- **Revize:** 3
 
 ## 1. Účel dokumentu
 
@@ -81,7 +81,7 @@ typedef struct {
 
 Zamýšlené veřejné rozhraní obsahuje funkci `regression_forward`, která pro dané `x` vrací `self->a * x + self->b`. Struktura má být veřejná v `include/regression/regression.h`, zdrojový soubor v `src/` a jednotkové testy v `tests/`. Data, která se vejdou do automatické paměti, mají zůstat na zásobníku; případná dynamická paměť musí procházet `lib/alloc`.
 
-V zadání se pro název typu střídá `Regresion` a `Regression`. Tento návrh používá `Regression` podle názvu dopředné funkce; pravopis a přesný podpis funkce včetně případného `const` ukazatele se potvrdí před vytvořením veřejné hlavičky.
+Veřejný název typu je `Regression`. Přesný podpis dopředné funkce včetně případného `const` ukazatele se potvrdí před vytvořením veřejné hlavičky.
 
 Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat `a`, `b` a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. `a` a `b` jsou učitelné parametry modelu; rychlost učení `η` a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
 
@@ -97,7 +97,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 
 | ID | Požadavek | Stav |
 |---|---|---|
-| LR-001 | Model musí uchovávat `a` a `b` jako `float`. | Odvozeno přímo ze zadání. |
+| LR-001 | Typ `Regression` musí uchovávat `a` a `b` jako `float`. | Odvozeno přímo ze zadání. |
 | LR-002 | Dopředná funkce musí vrátit `a · x + b`. | Odvozeno přímo ze zadání. |
 | LR-003 | Varianta bez posunu musí být reprezentovatelná jako `b = 0`. | Odvozeno přímo ze zadání. |
 | LR-004 | Produkční kód nesmí záviset na frameworku pro strojové učení. | Potvrzené pravidlo repozitáře. |
@@ -130,7 +130,7 @@ Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou 
 | LR-OP-02 | Jak řídit průchod SGD? | Pořadí bodů, pevná či proměnná rychlost učení, počet epoch, kritérium ukončení a případné mini dávky. |
 | LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: `a` i `b`; `b = 0` lze použít jako počáteční hodnotu. |
 | LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Pevná testovací sada, pole předaná API, soubor či generátor. |
-| LR-OP-05 | Jaký je přesný veřejný podpis a jméno typu? | Potvrdit `Regression` a rozhodnout o `const` u vstupního ukazatele. |
+| LR-OP-05 | Jaký je přesný veřejný podpis dopředné funkce? | Rozhodnout o `const` u vstupního ukazatele. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
 | LR-OP-07 | Jak prezentovat proložení bodů? | Číselný výstup, export bodů a přímky pro graf nebo vlastní vizualizace. |
 
