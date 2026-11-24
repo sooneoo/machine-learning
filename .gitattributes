@@ -1,0 +1,2 @@
+# Keep platform Make rules stable across Git clients.
+*.mk text eol=lf
