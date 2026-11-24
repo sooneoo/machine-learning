@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 5
+- **Revize:** 6
 
 ## 1. Účel dokumentu
 
@@ -87,6 +87,29 @@ Veřejný název typu je `Regression`. Přesný podpis dopředné funkce včetn�
 
 Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat $a$, $b$ a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. $a$ a $b$ jsou učitelné parametry modelu; rychlost učení $\eta$ a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
 
+### 5.1 UML pohled na moduly
+
+Diagram popisuje role modulů v C, nikoli požadavek na objektovou hierarchii. Šipka směřuje od modulu, který používá rozhraní, k modulu, který je poskytuje.
+
+```mermaid
+classDiagram
+    direction LR
+    class Runner
+    class Optimizer
+    class Regression
+    Runner ..> Regression : vytváří model a volá predikci
+    Runner ..> Optimizer : spouští učení
+    Optimizer ..> Regression : čte a upravuje parametry
+```
+
+| Modul | Soubor / rozhraní | Odpovědnost |
+|---|---|---|
+| `Runner` | `src/main.c` | Řídí běh experimentu, připraví model, předá jej optimalizátoru a vyvolá vyhodnocení. Způsob získání dat a výstupu se ještě určí. |
+| `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává parametry a počítá dopředný výstup; nezná `Optimizer` ani `Runner`. |
+| `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Používá veřejné rozhraní `Regression` pro výpočet ztráty, gradientů a kroků SGD. |
+
+`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Přesná veřejná API a tok trénovacích dat zůstávají otevřené do dalšího návrhu.
+
 Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows je připravena konfigurace `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
 ## 6. Výpočetní optimalizace a paralelizace
@@ -109,6 +132,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
 | LR-009 | Ztráta pro $N>0$ bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu $\hat y_i-y_i$. | Potvrzený výchozí směr; numerická smlouva se doplní. |
 | LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
+| LR-011 | `Runner` v `src/main.c` musí koordinovat použití `Regression` a `Optimizer`; závislosti mezi moduly musí odpovídat diagramu v oddílu 5.1. | Potvrzená architektura. |
 
 Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
@@ -121,6 +145,7 @@ Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou do
 | LR-T03 | LR-002 | $a=-1$, $b=2$, $x=-2$ | $\hat y=4$ | Plánováno; kód neexistuje. |
 | LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Plánováno; kód neexistuje. |
 | LR-T05 | LR-010 | $a=b=0$, $x=2$, $y=1$, $\eta=0{,}1$ | $g_a=-4$, $g_b=-2$; po jednom kroku $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
+| LR-T06 | LR-008, LR-011 | Kontrola závislostí zdrojových modulů | `Runner` používá model a optimalizátor; `Optimizer` používá model; `Regression` nemá závislost na zbývajících dvou modulech. | Plánováno; kód neexistuje. |
 
 Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
@@ -146,6 +171,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 
 | Oblast | Plánovaná cesta |
 |---|---|
+| Vstupní bod a řízení experimentu | `src/main.c` |
 | Veřejný model a dopředný výpočet | `include/regression/regression.h`, `src/regression.c` |
 | Ztráta a učení parametrů | `include/regression/optimizer.h`, `src/optimizer.c` |
 | Jednotkové testy | `tests/test_regression.c`, `tests/unit.c`, `tests/unit.h`, `tests/main.c` |
@@ -172,3 +198,5 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Sigmoidová aktivace:** Nelineární funkce aplikovaná na vážený součet neuronu; v této regresi se nepoužívá.
 - **Identická aktivace:** Výstup se rovná vstupu aktivace, proto model vrací přímo $ax+b$.
 - **Referenční sekvenční chování:** Jednovláknový výsledek určený pro kontrolu budoucích výkonnostních změn.
+- **Runner:** Vstupní modul experimentu v `src/main.c`, který řídí spolupráci modelu a optimalizátoru.
+- **UML diagram:** Grafické znázornění rolí modulů a směru jejich závislostí; šipka v tomto dokumentu míří na používané rozhraní.
