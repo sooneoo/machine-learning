@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 6
+- **Revize:** 7
 
 ## 1. Účel dokumentu
 
@@ -89,7 +89,7 @@ Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. 
 
 ### 5.1 UML pohled na moduly
 
-Diagram popisuje role modulů v C, nikoli požadavek na objektovou hierarchii. Šipka směřuje od modulu, který používá rozhraní, k modulu, který je poskytuje.
+Diagram popisuje role modulů v C, nikoli požadavek na objektovou hierarchii. Šipka směřuje od modulu, který používá rozhraní, k modulu, který je poskytuje. Symboly jsou zatím záměrně bez členů: v této fázi brainstormingu zachycují potvrzené role a závislosti, nikoli definitivní veřejná rozhraní. Potvrzené atributy typu `Regression` jsou uvedeny výše; zbývající rozhraní, vlastnictví dat a jejich tok se do diagramu doplní po společném rozhodnutí.
 
 ```mermaid
 classDiagram
@@ -108,7 +108,7 @@ classDiagram
 | `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává parametry a počítá dopředný výstup; nezná `Optimizer` ani `Runner`. |
 | `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Používá veřejné rozhraní `Regression` pro výpočet ztráty, gradientů a kroků SGD. |
 
-`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Přesná veřejná API a tok trénovacích dat zůstávají otevřené do dalšího návrhu.
+`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Přesná veřejná API a tok trénovacích dat zůstávají otevřené do dalšího návrhu; po jejich odsouhlasení se upraví diagram, popis modulů i odpovídající požadavky a kontroly.
 
 Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows je připravena konfigurace `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
