@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; volba učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 0
+- **Revize:** 1
 
 ## 1. Účel dokumentu
 
@@ -65,7 +65,7 @@ Zamýšlené veřejné rozhraní obsahuje funkci `regression_forward`, která pr
 
 V zadání se pro název typu střídá `Regresion` a `Regression`. Tento návrh používá `Regression` podle názvu dopředné funkce; pravopis a přesný podpis funkce včetně případného `const` ukazatele se potvrdí před vytvořením veřejné hlavičky.
 
-Rozdělení modulů a datových toků trénování zůstává otevřené do volby metody učení. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
+Rozdělení modulů a datových toků trénování zůstává otevřené do volby metody učení. Konfigurace `linux_x86_64` je výchozí. Pro Windows se připravují názvy `win32_x86_64` a jeho alias `win_32_x86_64`; oba mají používat stejná pravidla překladu. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
 ## 6. Výpočetní optimalizace a paralelizace
 
@@ -83,6 +83,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-004 | Produkční kód nesmí záviset na frameworku pro strojové učení. | Potvrzené pravidlo repozitáře. |
 | LR-005 | Jednotkové testy musí ověřit dopřednou funkci a později zvolenou metodu učení. | Potvrzené pravidlo repozitáře. |
 | LR-006 | Volba trénovacího algoritmu a akceptačních kritérií musí být schválena před jejich implementací. | Potvrzené pravidlo repozitáře. |
+| LR-007 | Překlad musí podporovat `linux_x86_64` a Windows pod názvy `win32_x86_64` a `win_32_x86_64`; oba názvy Windows musí vést ke stejným pravidlům. | Požadavek na připravovanou implementaci. |
 
 Požadavky na ztrátu, konvergenci, přesnost parametrů, chybná data a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
@@ -94,7 +95,7 @@ Požadavky na ztrátu, konvergenci, přesnost parametrů, chybná data a paměť
 | LR-T02 | LR-002, LR-003 | `a = 2`, `b = 0`, `x = 3` | `ŷ = 6` | Plánováno; kód neexistuje. |
 | LR-T03 | LR-002 | `a = -1`, `b = 2`, `x = -2` | `ŷ = 4` | Plánováno; kód neexistuje. |
 
-Testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny až po výběru metody a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky; nyní nic z toho nelze vykazovat jako provedený test.
+Testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny až po výběru metody a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a oba názvy Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
 ## 9. Otevřená rozhodnutí pro brainstorming
 
@@ -121,6 +122,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 | Veřejný model a dopředný výpočet | `include/regression/regression.h`, `src/regression.c` |
 | Jednotkové testy | `tests/test_regression.c`, `tests/unit.c`, `tests/unit.h`, `tests/main.c` |
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
+| Překlad pro Windows | `config/win32_x86_64.mk`, alias `config/win_32_x86_64.mk` |
 
 Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Po schválení rozhodnutí se stav dokumentu upraví a začnou se implementovat odpovídající moduly a testy.
 

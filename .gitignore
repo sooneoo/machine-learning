@@ -51,5 +51,11 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Vim swap files
+*.swp
+
+# Build caches in all projects
+**/.cache/
+
 # debug information files
 *.dwo
