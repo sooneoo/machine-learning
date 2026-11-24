@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-24
-- **Revize:** 4
+- **Revize:** 5
 
 ## 1. Účel dokumentu
 
@@ -87,7 +87,7 @@ Veřejný název typu je `Regression`. Přesný podpis dopředné funkce včetn�
 
 Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat $a$, $b$ a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. $a$ a $b$ jsou učitelné parametry modelu; rychlost učení $\eta$ a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
 
-Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows se připravují názvy `win32_x86_64` a jeho alias `win_32_x86_64`; oba mají používat stejná pravidla překladu. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
+Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows je připravena konfigurace `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
 ## 6. Výpočetní optimalizace a paralelizace
 
@@ -105,7 +105,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-004 | Produkční kód nesmí záviset na frameworku pro strojové učení. | Potvrzené pravidlo repozitáře. |
 | LR-005 | Jednotkové testy musí ověřit dopřednou funkci a později zvolenou metodu učení. | Potvrzené pravidlo repozitáře. |
 | LR-006 | Volba trénovacího algoritmu a akceptačních kritérií musí být schválena před jejich implementací. | Potvrzené pravidlo repozitáře. |
-| LR-007 | Překlad musí podporovat `linux_x86_64` a Windows pod názvy `win32_x86_64` a `win_32_x86_64`; oba názvy Windows musí vést ke stejným pravidlům. | Požadavek na připravovanou implementaci. |
+| LR-007 | Překlad musí podporovat `linux_x86_64` a `win32_x86_64`. | Požadavek na připravovanou implementaci. |
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
 | LR-009 | Ztráta pro $N>0$ bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu $\hat y_i-y_i$. | Potvrzený výchozí směr; numerická smlouva se doplní. |
 | LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
@@ -122,7 +122,7 @@ Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou do
 | LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Plánováno; kód neexistuje. |
 | LR-T05 | LR-010 | $a=b=0$, $x=2$, $y=1$, $\eta=0{,}1$ | $g_a=-4$, $g_b=-2$; po jednom kroku $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
 
-Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a oba názvy Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
+Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -150,7 +150,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 | Ztráta a učení parametrů | `include/regression/optimizer.h`, `src/optimizer.c` |
 | Jednotkové testy | `tests/test_regression.c`, `tests/unit.c`, `tests/unit.h`, `tests/main.c` |
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
-| Překlad pro Windows | `config/win32_x86_64.mk`, alias `config/win_32_x86_64.mk` |
+| Překlad pro Windows | `config/win32_x86_64.mk` |
 
 Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Po schválení rozhodnutí se stav dokumentu upraví a začnou se implementovat odpovídající moduly a testy.
 
