@@ -106,7 +106,7 @@ static bool test_squared_loss_and_reference(char *error, size_t error_size) {
 }
 
 
-static bool test_batch_gradient_and_update(char *error, size_t error_size) {
+static bool test_bgd_gradient_and_update(char *error, size_t error_size) {
     Regression model = {0};
     Optimizer training = optimizer(&model);
     const float x[] = {1.0f, 3.0f, 5.0f};
@@ -129,18 +129,18 @@ static bool test_batch_gradient_and_update(char *error, size_t error_size) {
 }
 
 
-static bool test_batch_single_and_reference(char *error, size_t error_size) {
+static bool test_bgd_single_and_reference(char *error, size_t error_size) {
     Regression model = {0};
     Optimizer training = optimizer(&model);
     const float x[] = {2.0f};
     const float y[] = {1.0f};
-    float online_loss = optimizer_backward(&training, x[0], y[0]);
-    float online_ga = training.ga;
-    float online_gb = training.gb;
-    float batch_loss = optimizer_backward_batch(&training, x, y, 1);
+    float sgd_loss = optimizer_backward(&training, x[0], y[0]);
+    float sgd_ga = training.ga;
+    float sgd_gb = training.gb;
+    float bgd_loss = optimizer_backward_batch(&training, x, y, 1);
 
-    TEST_ASSERT(batch_loss == online_loss, "one sample loss");
-    TEST_ASSERT(training.ga == online_ga && training.gb == online_gb,
+    TEST_ASSERT(bgd_loss == sgd_loss, "one sample loss");
+    TEST_ASSERT(training.ga == sgd_ga && training.gb == sgd_gb,
             "one sample gradients");
     model = (Regression) {.a = 0.625f};
     const float all_x[] = {1.0f, 3.0f, 5.0f};
@@ -160,8 +160,8 @@ static const TestCase tests[] = {
     {"optimizer initialization", test_optimizer_initialization},
     {"backward and update", test_backward_and_update},
     {"squared loss and reference", test_squared_loss_and_reference},
-    {"batch gradient and update", test_batch_gradient_and_update},
-    {"batch single and reference", test_batch_single_and_reference}
+    {"BGD gradient and update", test_bgd_gradient_and_update},
+    {"BGD single and reference", test_bgd_single_and_reference}
 };
 
 

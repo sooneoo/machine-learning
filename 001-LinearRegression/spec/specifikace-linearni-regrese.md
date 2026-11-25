@@ -2,10 +2,10 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Stav dokumentu:** online i dávkový běh ověřen; společný závěr testování čeká na odsouhlasení vlastníkem
+- **Stav dokumentu:** běhy SGD i BGD ověřeny; společný závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 19
+- **Revize:** 20
 
 ## 1. Účel dokumentu
 
@@ -25,8 +25,8 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 
 ### 2.2 První pozorovací běh a další varianty
 
-Výchozí metodou je online SGD se čtvercovou ztrátou: po každém ze tří
-bodů se aktualizují oba parametry modelu. Dávkové rozšíření počítá
+Výchozí metodou je SGD se čtvercovou ztrátou: po každém ze tří
+bodů se aktualizují oba parametry modelu. BGD (dávkový gradientní sestup) počítá
 průměrnou MSE a její gradienty ze všech bodů před jedinou aktualizací
 v epoše. Runner nyní provádí obě metody pro $\eta=0{,}01$ i $0{,}1$,
 vždy deset epoch a se zvlášť nastaveným seedem 42. Postup nemá
@@ -85,7 +85,7 @@ b' &= b-\eta g_b.
 \end{aligned}
 $$
 
-$\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadřuje místní sklon ztráty v současném bodě $(a,b)$, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném $\eta$; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci by byl dávkový gradientní sestup. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
+$\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadřuje místní sklon ztráty v současném bodě $(a,b)$, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném $\eta$; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci je BGD. V tomto prototypu používá SGD pevné pořadí bodů 1, 3, 5, nikoli náhodné losování vzorků. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
 
 Pro první pozorovací běh lze odvodit chování jediného kroku na témž
 bodu. Je-li reziduum $r_i=\hat y_i-y_i$, po aktualizaci obou parametrů
@@ -113,7 +113,7 @@ $$
 
 Pro $a_\star$ a $b_\star$ je teoretická MSE na této sadě nulová a očekávaný vztah je $\hat y=0{,}625x$. Tři přesné body postačují jako kontrolní úloha pro tento dvouparametrový model. Samy o sobě nedokazují chování při šumu, odlehlých bodech ani u jiných vztahů; SGD navíc dosáhne referenčních parametrů jen s vhodným průběhem učení.
 
-### 4.2 Teorie dávkového sestupu
+### 4.2 Teorie BGD (dávkového gradientního sestupu)
 
 Vlastník opravil znaménko v návrhu ztráty: porovnává se rozdíl
 $\hat y_i-y_i$, nikoli součet $\hat y_i+y_i$. Pro celou dávku
@@ -172,7 +172,7 @@ b_0=2\frac{r_b}{\mathrm{RAND\_MAX}}-1,\qquad
 r_a,r_b\in\{0,\ldots,\mathrm{RAND\_MAX}\}
 $$
 
-Online i dávkový běh nastaví `srand(42)` před vytvořením modelu; konstruktor generátor znovu neseeduje. Na téže platformě tak obě metody začínají ze stejného stavu. První běh používá body z oddílu 2.3. Rozložení a posloupnost hodnot závisí na implementaci `rand()`, takže testy mezi platformami nesmějí předpokládat stejná konkrétní náhodná čísla. `regression_forward` přijímá ukazatel na model a skalár $x$, vrací `float` podle $\hat y=ax+b$ a parametry nemění.
+SGD i BGD nastaví `srand(42)` před vytvořením modelu; konstruktor generátor znovu neseeduje. Na téže platformě tak obě metody začínají ze stejného stavu. První běh používá body z oddílu 2.3. Rozložení a posloupnost hodnot závisí na implementaci `rand()`, takže testy mezi platformami nesmějí předpokládat stejná konkrétní náhodná čísla. `regression_forward` přijímá ukazatel na model a skalár $x$, vrací `float` podle $\hat y=ax+b$ a parametry nemění.
 
 ### 5.2 Optimalizátor `Optimizer`
 
@@ -224,8 +224,8 @@ classDiagram
     direction LR
     class Runner {
         +main()
-        +run_online_experiment(lr)
-        +run_batch_experiment(lr)
+        +run_sgd_experiment(lr)
+        +run_bgd_experiment(lr)
     }
     class Optimizer {
         +regression
@@ -249,9 +249,9 @@ classDiagram
 
 | Modul | Soubor / rozhraní | Odpovědnost |
 |---|---|---|
-| `Runner` | `src/main.c` | Pro každou ze čtyř variant nastaví semínko, vytvoří model a optimalizátor na zásobníku, řídí postup učení a výpis průběhu. `main` volá online a dávkovou funkci pro obě hodnoty `lr`. |
+| `Runner` | `src/main.c` | Pro každou ze čtyř variant nastaví semínko, vytvoří model a optimalizátor na zásobníku, řídí postup učení a výpis průběhu. `main` volá SGD a BGD funkci pro obě hodnoty `lr`. |
 | `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává $a$, $b$, inicializuje je a počítá dopředný výstup; nezná zbývající moduly. |
-| `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Odkazuje na model, počítá ztrátu a gradienty a provádí krok SGD. |
+| `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Odkazuje na model, počítá ztrátu a gradienty a provádí kroky SGD i BGD. |
 
 `tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Trénovací pole jsou lokální konstantní hodnoty obou funkcí Runneru v `src/main.c`. Následující diagram
 zachycuje první pozorovací běh; `optimizer_backward` sám volá
@@ -259,7 +259,7 @@ zachycuje první pozorovací běh; `optimizer_backward` sám volá
 
 ```mermaid
 flowchart TD
-    Main[main] --> Seed[run_online_experiment: srand 42]
+    Main[main] --> Seed[run_sgd_experiment: srand 42]
     Seed --> Model[Regression na zásobníku]
     Model --> Opt[Optimizer odkazuje na Regression]
     Opt --> Data["Konstantní pole x a y, lr 0,1, epoch 10"]
@@ -293,24 +293,24 @@ Pro první verzi se předpokládají také konečné hodnoty parametrů, $x$ a $
 
 Implementace byla schválena vlastníkem dne 2026-11-25. Překlad a testy proběhly na `linux_x86_64` a `win32_x86_64`; objekty a programy jsou oddělené v `.cache/$(PLATFORM)/`.
 
-### 5.5 Implementovaný dávkový běh v `Runner`
+### 5.5 Implementovaný běh BGD v `Runner`
 
 `main()` spustí v tomto pořadí
-`run_online_experiment(0.01f)`, `run_batch_experiment(0.01f)`,
-`run_online_experiment(0.1f)` a `run_batch_experiment(0.1f)`.
+`run_sgd_experiment(0.01f)`, `run_bgd_experiment(0.01f)`,
+`run_sgd_experiment(0.1f)` a `run_bgd_experiment(0.1f)`.
 Každá funkce zvlášť zavolá `srand(42)`, vytvoří lokální
 `Regression` a `Optimizer` a použije stejné tři konstantní
 dvojice. Počet epoch je deset. Tím se na jedné platformě
 porovnávají modely se stejným počátečním stavem; konkrétní
 hodnoty `rand()` mezi Linuxem a Windows shodné být nemusejí.
 
-Online funkce pouze přijme `lr` jako argument, její volání
+SGD funkce pouze přijme `lr` jako argument, její volání
 `optimizer_backward` a `optimizer_update` po každém bodu
 zůstane zachováno. Dávková funkce v každé epoše jednou
 zavolá `optimizer_backward_batch` pro všechny tři body
 a pak jednou `optimizer_update`. Před aktualizací vypíše
 vrácenou MSE, po aktualizaci nové $a$ a $b$. Výstup je
-označen metodou, `lr` a číslem epochy; online výstup nadále
+označen metodou, `lr` a číslem epochy; SGD výstup nadále
 obsahuje jednotlivé body. Po každém samostatném běhu runner
 vypíše prázdný řádek, který oddělí následující experiment.
 
@@ -319,7 +319,7 @@ flowchart TD
     Main[main: čtyři běhy] --> Seed[Každý běh zvlášť: srand 42]
     Seed --> Data[Lokální model, optimalizátor a tři body]
     Data --> Epoch[Deset epoch]
-    Epoch --> Batch[Batch: jeden průchod všemi body]
+    Epoch --> Batch[BGD: jeden průchod všemi body]
     Batch --> Grad[MSE před krokem, průměrné gradienty]
     Grad --> Update[Jediný optimizer_update]
     Update --> Report[Výpis MSE před a parametrů po kroku]
@@ -337,7 +337,7 @@ zaměnit se ztrátou jednotlivého kroku před aktualizací.
 
 Optimalizace parametrů modelu řeší matematickou úlohu prokládání bodů. Optimalizace jejího výpočtu je samostatná technická úloha: volba rozložení bodů v paměti, průchodů daty, redukce součtů, vektorizace a případné rozdělení mezi vlákna. Před návrhem těchto změn se musí nejprve ustálit referenční sekvenční chování a měřítka přesnosti.
 
-U jednoduchého modelu se dvěma parametry může režie obecného frameworku nebo paralelního plánování převážit samotný výpočet. To je hypotéza k měření, nikoli již dosažený výsledek. Každá optimalizace musí být porovnána se stejným problémem, daty, přesností a hardwarem. Dávkový průchod použije tři skalární akumulátory typu `float` pro součet ztrát a obou gradientů, každý bod vyhodnotí jednou a až po cyklu vydělí součty počtem bodů. Nepotřebuje dynamickou alokaci, vektorizaci ani vlákna. Pro větší sady se zvlášť posoudí numerická přesnost akumulace. Online metoda provede tři aktualizace na epochu, dávková jednu; porovnání po stejném počtu epoch proto neizoluje samotnou režii jedné aktualizace.
+U jednoduchého modelu se dvěma parametry může režie obecného frameworku nebo paralelního plánování převážit samotný výpočet. To je hypotéza k měření, nikoli již dosažený výsledek. Každá optimalizace musí být porovnána se stejným problémem, daty, přesností a hardwarem. Dávkový průchod použije tři skalární akumulátory typu `float` pro součet ztrát a obou gradientů, každý bod vyhodnotí jednou a až po cyklu vydělí součty počtem bodů. Nepotřebuje dynamickou alokaci, vektorizaci ani vlákna. Pro větší sady se zvlášť posoudí numerická přesnost akumulace. SGD provede tři aktualizace na epochu, BGD jednu; porovnání po stejném počtu epoch proto neizoluje samotnou režii jedné aktualizace.
 
 ## 7. Předběžné normativní požadavky
 
@@ -352,23 +352,23 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-007 | Překlad musí podporovat `linux_x86_64` a `win32_x86_64`. | Ověřeno překladem a testy obou platforem. |
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
 | LR-009 | `optimizer_backward` musí pro jeden bod vrátit čtvercovou ztrátu; průměr těchto ztrát pro $N>0$ bodů odpovídá MSE. | Potvrzená numerická smlouva. |
-| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzené online kroky po jednotlivých bodech. |
+| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzené SGD kroky po jednotlivých bodech. |
 | LR-011 | `Runner` v `src/main.c` musí koordinovat použití `Regression` a `Optimizer`; závislosti mezi moduly musí odpovídat diagramu v oddílu 5.3. | Potvrzená architektura. |
 | LR-012 | `regression()` musí vrátit hodnotovou strukturu s parametry v intervalu $[-1,1]$, získanými dvěma voláními `rand()` bez dynamické alokace. | Potvrzená architektura; numerické detaily se ověří. |
 | LR-013 | `Optimizer` musí obsahovat nevlastněný ukazatel na `Regression` a vlastní `float` gradienty `ga` a `gb`, inicializované na nulu; model musí žít déle než optimalizátor. | Potvrzená architektura. |
 | LR-014 | `optimizer_backward` musí vrátit čtvercovou ztrátu jednoho bodu, uložit gradienty do `Optimizer` a ponechat model beze změny. | Potvrzený postup SGD. |
-| LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; první běh předpokládá platné $\mathrm{lr}$ bez průběžné kontroly. |
+| LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Společný krok SGD a BGD; první běh předpokládá platné $\mathrm{lr}$ bez průběžné kontroly. |
 | LR-016 | První prototyp musí použít učicí dvojice $(1;0{,}625)$, $(3;1{,}875)$ a $(5;3{,}125)$ ve vztahu kilometrů k mílím. | Potvrzená učicí sada. |
 | LR-017 | První verze musí považovat trénovací hodnoty $x$ a $y$ za platné vstupy a neprovádět jejich průběžnou validaci v modelu ani optimalizátoru. | Potvrzený vstupní předpoklad. |
-| LR-018 | `run_online_experiment()` musí vytvořit model a optimalizátor jako lokální hodnoty, předávat jejich adresy a udržet model živý po celou dobu používání optimalizátoru; `main` tuto funkci zavolá; horké funkce nesmějí opakovat `NULL` kontroly těchto ukazatelů. | Potvrzený přístup k životnosti a výkonu. |
-| LR-019 | `run_online_experiment()` musí zavolat `srand(42)` před `regression()`, poté vytvořit `Optimizer` nad lokálním modelem a uložit tři body do konstantních polí `x` a `y`. `main` tuto funkci pouze zavolá. | Potvrzený první běh. |
-| LR-020 | Online experiment musí provést přesně deset epoch v pevném pořadí bodů 1, 3, 5 a po každém bodu zavolat `optimizer_backward` a `optimizer_update`, bez dávkování či předčasného zastavení. | Potvrzený první běh. |
+| LR-018 | `run_sgd_experiment()` musí vytvořit model a optimalizátor jako lokální hodnoty, předávat jejich adresy a udržet model živý po celou dobu používání optimalizátoru; `main` tuto funkci zavolá; horké funkce nesmějí opakovat `NULL` kontroly těchto ukazatelů. | Potvrzený přístup k životnosti a výkonu. |
+| LR-019 | `run_sgd_experiment()` musí zavolat `srand(42)` před `regression()`, poté vytvořit `Optimizer` nad lokálním modelem a uložit tři body do konstantních polí `x` a `y`. `main` tuto funkci pouze zavolá. | Potvrzený první běh. |
+| LR-020 | SGD experiment musí provést přesně deset epoch v pevném pořadí bodů 1, 3, 5 a po každém bodu zavolat `optimizer_backward` a `optimizer_update`, bez dávkování či předčasného zastavení. | Potvrzený první běh. |
 | LR-021 | První běh musí používat pevné `lr = 0.1f` a po každém bodu vypsat číslo epochy, bodu, ztrátu před krokem a `a`, `b` po kroku. | Potvrzená diagnostika. |
-| LR-022 | Horké funkce ani online experiment nebudou při prvním běhu průběžně kontrolovat platnost bodů, `lr` či numerické přetečení. | Potvrzený pozorovací režim. |
+| LR-022 | Horké funkce ani SGD experiment nebudou při prvním běhu průběžně kontrolovat platnost bodů, `lr` či numerické přetečení. | Potvrzený pozorovací režim. |
 | LR-023 | `optimizer_backward_batch` musí pro `count > 0` vrátit MSE celé dávky a zapsat průměrné gradienty podle oddílu 4.2, bez změny modelu. | Implementováno a ověřeno na obou platformách. |
 | LR-024 | Dávková ztráta a gradienty musí vzniknout jedním průchodem bez dynamické alokace; vstupní pole a počet jsou předpoklady volajícího. | Implementováno a ověřeno na obou platformách. |
-| LR-025 | Po dávkovém zpětném průchodu se musí použít stávající `optimizer_update`; původní online rozhraní a chování zůstává dostupné. | Implementováno a ověřeno na obou platformách. |
-| LR-026 | `main` musí spustit online a dávkovou variantu pro `lr = 0.01f` i `lr = 0.1f`; každý běh zvlášť nastaví seed 42 a provede deset epoch na stejných třech bodech. | Implementováno a ověřeno na obou platformách. |
+| LR-025 | Po dávkovém zpětném průchodu se musí použít stávající `optimizer_update`; původní SGD rozhraní a chování zůstává dostupné. | Implementováno a ověřeno na obou platformách. |
+| LR-026 | `main` musí spustit SGD a BGD pro `lr = 0.01f` i `lr = 0.1f`; každý běh zvlášť nastaví seed 42 a provede deset epoch na stejných třech bodech. | Implementováno a ověřeno na obou platformách. |
 | LR-027 | Dávkový běh musí po každé epoše vypsat MSE před aktualizací a parametry po ní, s označením metody a `lr`; po každém experimentu runner vypíše prázdný oddělovací řádek. | Implementováno a ověřeno na obou platformách. |
 
 Kritéria konvergence a přesnosti parametrů se stanoví až z pozorovaných
@@ -389,14 +389,14 @@ Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodso
 | LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Splněno na obou platformách: test_optimizer_initialization. |
 | LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Splněno na obou platformách: test_optimizer_initialization. |
 | LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Splněno na obou platformách: test_squared_loss_and_reference. |
-| LR-T11 | LR-013, LR-018, LR-019 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `run_online_experiment()`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Ověřeno kontrolou zdrojového kódu a překladem. |
-| LR-T12 | LR-019, LR-020, LR-021 | Spuštění online experimentu se seedem 42 | Přesně 30 výpisů v pořadí deseti epoch a tří bodů, se ztrátou před a parametry po každém kroku. | Splněno na obou platformách: 30 řádků, správné pořadí, opakovatelný běh. |
+| LR-T11 | LR-013, LR-018, LR-019 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `run_sgd_experiment()`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Ověřeno kontrolou zdrojového kódu a překladem. |
+| LR-T12 | LR-019, LR-020, LR-021 | Spuštění SGD experimentu se seedem 42 | Přesně 30 výpisů v pořadí deseti epoch a tří bodů, se ztrátou před a parametry po každém kroku. | Splněno na obou platformách: 30 řádků, správné pořadí, opakovatelný běh. |
 | LR-T13 | LR-023, LR-024 | $a=b=0$, celá trojice z oddílu 2.3 | $L=875/192$, $g_a=-175/12$, $g_b=-15/4$; model se při `backward_batch` nezmění. | Splněno na obou platformách. |
-| LR-T14 | LR-023, LR-025 | Jednobodová dávka a referenční přímka $(0{,}625;0)$ | Pro jeden bod stejná ztráta a gradienty jako u online funkce; pro referenční přímku nulová MSE a gradienty. | Splněno na obou platformách. |
+| LR-T14 | LR-023, LR-025 | Jednobodová dávka a referenční přímka $(0{,}625;0)$ | Pro jeden bod stejná ztráta a gradienty jako u SGD funkce; pro referenční přímku nulová MSE a gradienty. | Splněno na obou platformách. |
 | LR-T15 | LR-025 | Gradienty z LR-T13 a `lr = 0.01f` | Stávající `optimizer_update` nastaví $a=7/48$ a $b=0{,}0375$. | Splněno na obou platformách. |
-| LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 online a 10 dávkových kroků pro každé `lr`, s prázdným řádkem po každém běhu. | Splněno na obou platformách. |
+| LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 kroků SGD a 10 kroků BGD pro každé `lr`, s prázdným řádkem po každém běhu. | Splněno na obou platformách. |
 
-Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_batch_gradient_and_update`, LR-T14 `test_batch_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12 a LR-T16 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
+Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_bgd_gradient_and_update`, LR-T14 `test_bgd_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12 a LR-T16 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -405,13 +405,13 @@ Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez z
 | LR-OP-01 | Jaká je ztráta pro jeden krok SGD? | Rozhodnuto: $e_i=(\hat y_i-y_i)^2$, tedy MSE pro jeden bod. |
 | LR-OP-02 | Jak řídit průchod SGD? | Rozhodnuto pro první běh: pevné pořadí 1, 3, 5, deset epoch, `lr = 0.1f`, aktualizace po bodu, bez mini dávek a předčasného ukončení. |
 | LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: $a$ i $b$; $b=0$ lze použít jako počáteční hodnotu. |
-| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Rozhodnuto: dvě lokální konstantní pole `x` a `y` v `run_online_experiment()` podle oddílu 2.3. |
+| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Rozhodnuto: dvě lokální konstantní pole `x` a `y` v `run_sgd_experiment()` podle oddílu 2.3. |
 | LR-OP-05 | Jaký je veřejný podpis dopředné funkce? | Rozhodnuto: `float regression_forward(Regression *self, float x)`. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
 | LR-OP-07 | Jak prezentovat proložení bodů? | První běh vypíše po každém vzorku epochu, bod, ztrátu před krokem a `a`, `b` po kroku. Graf nebo export mohou následovat po vyhodnocení. |
 | LR-OP-08 | Jak zvolit semínko generátoru? | Rozhodnuto: Každý pozorovací běh volá `srand(42)` před vytvořením modelu. Výsledné hodnoty `rand()` se mohou mezi platformami lišit. |
 | LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění; trénovací $x$, $y$ a ukazatele na živé lokální objekty se považují za platné bez opakovaných kontrol. Pro první běh se `lr` ani přetečení neověřují; případný `NaN` či nekonečno se zaznamená jako pozorování. |
-| LR-OP-10 | Způsobuje aktualizace po jednotlivých bodech kolísání jejich ztrát? | Srovnání při `lr = 0.01f` a `0.1f` provedeno: dávka při vysokém `lr` také diverguje. Příčinu dočasného růstu ztráty jednotlivého bodu toto měření samo neizoluje; viz oddíl 10.2. |
+| LR-OP-10 | Způsobuje aktualizace po jednotlivých bodech kolísání jejich ztrát? | Srovnání při `lr = 0.01f` a `0.1f` provedeno: BGD při vysokém `lr` také diverguje. Příčinu dočasného růstu ztráty jednotlivého bodu toto měření samo neizoluje; viz oddíl 10.2. |
 
 Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Běhy s `lr = 0.01f` a `0.1f` jsou nyní zaznamenány v oddílu 10; další parametry vyžadují nové rozhodnutí.
 
@@ -519,7 +519,7 @@ ale samo o sobě nezaručuje pokles MSE po celé epoše.
 
 **Obrázek 1:** MSE celé učicí sady po každé epoše v mílích na druhou. Svislá osa je logaritmická; plná čára označuje Linux a přerušovaná Windows. Červeně je $\eta=0{,}1$, modře $\eta=0{,}01$. Hodnoty pro $0{,}1$ byly odvozeny z parametrů zaokrouhlených v tabulce výše na pět platných číslic, hodnoty pro $0{,}01$ pocházejí z tabulky v tomto oddílu. Graf je proto přibližný a zobrazuje MSE po epoše, nikoli jednotlivé `loss_before`.
 
-### 10.2 Srovnání online a dávkového učení
+### 10.2 Srovnání SGD a BGD
 
 Dne 2026-11-25 byly na obou platformách znovu sestaveny oba programy
 a spuštěno sedm jednotkových testů (`test build`). Produkční binární
@@ -527,8 +527,8 @@ soubor byl následně spuštěn pro čtyři varianty v jednom procesu. Každá
 varianta nastavila `srand(42)` a začala stejným modelem jako její
 protějšek na téže platformě. Linux začínal s
 $(a,b)=(-0{,}93306011;-0{,}340071559)$, Windows s
-$(-0{,}98931855;-0{,}975585222)$. Každý online běh vypsal 30
-aktualizací, každý dávkový 10. Překlad a spuštění:
+$(-0{,}98931855;-0{,}975585222)$. Každý běh SGD vypsal 30
+aktualizací, každý běh BGD 10. Překlad a spuštění:
 
 ```sh
 make PLATFORM=linux_x86_64 test build
@@ -543,13 +543,13 @@ mingw32-make PLATFORM=win32_x86_64 exec
 Tabulky udávají **MSE celé trojice po epoše** v mílích na druhou.
 Je vypočtena z konečných $a$ a $b$ vypsaných programem na devět
 platných číslic. Jde o přibližnou odvozenou metriku. Vypisovaná
-`loss_before` online patří jednomu bodu před jeho krokem;
-`mse_before` dávky celé trojici před jediným krokem. Tyto dvě
+`loss_before` SGD patří jednomu bodu před jeho krokem;
+`mse_before` BGD celé trojici před jediným krokem. Tyto dvě
 hodnoty nejsou srovnatelné přímo ani s MSE po epoše.
 
 #### $\eta=0,01$
 
-| Epocha | Linux online | Linux dávka | Windows online | Windows dávka |
+| Epocha | Linux SGD | Linux BGD | Windows SGD | Windows BGD |
 |---:|---:|---:|---:|---:|
 | 1 | 4,3958 | 17,8296 | 5,89805 | 23,037 |
 | 2 | 0,607368 | 10,0549 | 0,927164 | 13,0171 |
@@ -564,7 +564,7 @@ hodnoty nejsou srovnatelné přímo ani s MSE po epoše.
 
 #### $\eta=0,1$
 
-| Epocha | Linux online | Linux dávka | Windows online | Windows dávka |
+| Epocha | Linux SGD | Linux BGD | Windows SGD | Windows BGD |
 |---:|---:|---:|---:|---:|
 | 1 | 236,182 | 70,2374 | 307,747 | 90,5722 |
 | 2 | 1755,36 | 156,038 | 2296,64 | 201,142 |
@@ -577,18 +577,18 @@ hodnoty nejsou srovnatelné přímo ani s MSE po epoše.
 | 9 | 2,15856e+09 | 41676,8 | 2,83059e+09 | 53710,2 |
 | 10 | 1,59972e+10 | 92589,2 | 2,09776e+10 | 119323 |
 
-![Porovnání MSE online a dávkového učení na Linuxu a Windows](graf-online-batch.svg)
+![Porovnání MSE SGD a BGD na Linuxu a Windows](graf-online-batch.svg)
 
 **Obrázek 2:** Odvozená MSE po epoše, logaritmická svislá osa.
 Každý panel používá samostatné měřítko pro své `lr`; seed 42,
-tři zadané body, stejný počáteční model v dvojici online/dávka
+tři zadané body, stejný počáteční model v dvojici SGD/BGD
 na jedné platformě. Hodnoty pocházejí z vypsaných parametrů,
 nikoli z přímého měření MSE po kroku uvnitř programu.
 
 Při `lr = 0.01f` obě metody na obou platformách snižovaly MSE
-po každé epoše. Po deseti epochách byla online varianta blíže
-referenční přímce než dávková. Online však provedla 30 aktualizací,
-dávková pouze 10; nejde tedy o čisté srovnání účinnosti jednoho
+po každé epoše. Po deseti epochách byla varianta SGD blíže
+referenční přímce než BGD. SGD však provedla 30 aktualizací,
+BGD pouze 10; nejde tedy o čisté srovnání účinnosti jednoho
 kroku nebo výpočetního času.
 
 Při `lr = 0.1f` MSE po deseti epochách u obou metod prudce vzrostla.
@@ -605,7 +605,7 @@ obecný závěr o všech datových sadách a modelech.
 
 **Navržený závěr k odsouhlasení:** Rozšíření správně počítá
 průměrnou MSE a gradienty celé trojice a umožňuje opakovatelně
-srovnat online a dávkový postup na Linuxu i Windows. Pro tyto
+srovnat SGD a BGD na Linuxu i Windows. Pro tyto
 tři body a deset epoch je `lr = 0.01f` v obou postupech použitelné
 jako pozorovací výchozí bod; `lr = 0.1f` vede k divergenci.
 Výsledky ukazují zásadní vliv rychlosti učení i počtu aktualizací.
@@ -644,7 +644,7 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Reziduum:** Rozdíl $\hat y_i-y_i$ pro jeden bod; jeho význam závisí na zvolené ztrátě.
 - **Analytické nejmenší čtverce:** Výpočet parametrů ze souhrnných součtů bodů pro čtvercovou chybu za platných předpokladů.
 - **Gradientní sestup:** Opakované posouvání parametrů proti gradientu ztráty; vyžaduje pravidlo kroku a ukončení.
-- **SGD:** Stochastický gradientní sestup; zde aktualizace parametrů podle gradientu ztráty jednoho trénovacího bodu.
+- **SGD:** Stochastický gradientní sestup; zde aktualizace parametrů podle gradientu jednoho bodu po každém vzorku v pevném pořadí. Náhodné míchání bodů tento prototyp neprovádí.
 - **Gradient:** Vektor parciálních derivací ztráty podle parametrů $a$ a $b$ v jejich aktuálních hodnotách.
 - **MSE:** Střední čtvercová chyba; průměr druhých mocnin rozdílů mezi odhadem a pozorováním.
 - **Hyperparametr:** Hodnota určující postup učení, například rychlost učení $\eta$; není přímo součástí modelové přímky.
@@ -666,5 +666,5 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Divergence:** Růst chyby při opakovaných krocích; při `lr = 0.1f` se v tomto běhu zvětšovala ztráta bodu $x=5$.
 - **MSE po epoše:** Průměr čtvercových chyb všech tří bodů vyhodnocených se stejnými parametry po dokončení epochy.
 - **Logaritmická osa:** Stupnice grafu, na níž stejný krok znamená stejný násobek MSE; umožňuje zobrazit rostoucí i klesající běh v jednom obrázku.
-- **Dávkový sestup:** Způsob učení s jednou aktualizací modelu po vyhodnocení celé trénovací trojice v dané epoše.
+- **BGD (dávkový gradientní sestup):** Aktualizace modelu z průměrného gradientu celé trénovací trojice jednou za epochu.
 - **Matice druhých derivací:** Matice změn gradientu MSE při změně $a$ a $b$; pro tuto kvadratickou úlohu určuje teoretickou mez stabilní rychlosti učení.

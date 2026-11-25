@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void run_online_experiment(float lr) {
+static void run_sgd_experiment(float lr) {
     srand(42);
     Regression model = regression();
     Optimizer training = optimizer(&model);
@@ -14,7 +14,7 @@ static void run_online_experiment(float lr) {
     size_t epoch = 10;
     size_t point_count = sizeof(x) / sizeof(x[0]);
 
-    printf("online: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
+    printf("SGD: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
             " initial_b=%.9g\n", lr, epoch, model.a, model.b);
 
     for (size_t epoch_index = 0; epoch_index < epoch; epoch_index++) {
@@ -32,7 +32,7 @@ static void run_online_experiment(float lr) {
 }
 
 
-static void run_batch_experiment(float lr) {
+static void run_bgd_experiment(float lr) {
     srand(42);
     Regression model = regression();
     Optimizer training = optimizer(&model);
@@ -41,7 +41,7 @@ static void run_batch_experiment(float lr) {
     size_t epoch = 10;
     size_t point_count = sizeof(x) / sizeof(x[0]);
 
-    printf("batch: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
+    printf("BGD: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
             " initial_b=%.9g\n", lr, epoch, model.a, model.b);
 
     for (size_t epoch_index = 0; epoch_index < epoch; epoch_index++) {
@@ -56,9 +56,9 @@ static void run_batch_experiment(float lr) {
 
 
 int main(void) {
-    run_online_experiment(0.01f);
-    run_batch_experiment(0.01f);
-    run_online_experiment(0.1f);
-    run_batch_experiment(0.1f);
+    run_sgd_experiment(0.01f);
+    run_bgd_experiment(0.01f);
+    run_sgd_experiment(0.1f);
+    run_bgd_experiment(0.1f);
     return 0;
 }

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="600" viewBox="0 0 1100 600">
 <rect width="1100" height="600" fill="white"/>
 <style>text{font-family:Arial,sans-serif;fill:#202c37}.title{font-size:21px;font-weight:bold}.label{font-size:15px}.tick{font-size:12px;fill:#506070}.grid{stroke:#d9e1e8;stroke-width:1}.axis{stroke:#303d49;stroke-width:1.3}</style>
-<text x="550" y="35" text-anchor="middle" class="title">Lineární regrese: MSE po epoše, online a dávka</text>
+<text x="550" y="35" text-anchor="middle" class="title">Lineární regrese: MSE po epoše, SGD a BGD</text>
 <text x="550" y="57" text-anchor="middle" class="tick">3 body (1, 3, 5 km), seed 42, 10 epoch, MSE z vypsaných a a b</text>
 <text x="300.5" y="105" text-anchor="middle" class="label">lr = 0,01</text>
 <line x1="88" y1="470.0" x2="513" y2="470.0" class="grid"/>
@@ -65,11 +65,11 @@
 <text x="835.5" y="518" text-anchor="middle" class="label">Epocha</text>
 <text transform="translate(20 300) rotate(-90)" text-anchor="middle" class="label">MSE [míle²], logaritmická osa</text>
 <line x1="140" y1="543" x2="173" y2="543" stroke="#1f6feb" stroke-width="3"/>
-<text x="180" y="548" class="label">Linux: online</text>
+<text x="180" y="548" class="label">Linux: SGD</text>
 <line x1="360" y1="543" x2="393" y2="543" stroke="#0b8e79" stroke-width="3"/>
-<text x="400" y="548" class="label">Linux: dávka</text>
+<text x="400" y="548" class="label">Linux: BGD</text>
 <line x1="140" y1="567" x2="173" y2="567" stroke="#d27313" stroke-width="3" stroke-dasharray="7 4"/>
-<text x="180" y="572" class="label">Windows: online</text>
+<text x="180" y="572" class="label">Windows: SGD</text>
 <line x1="360" y1="567" x2="393" y2="567" stroke="#b32753" stroke-width="3" stroke-dasharray="7 4"/>
-<text x="400" y="572" class="label">Windows: dávka</text>
+<text x="400" y="572" class="label">Windows: BGD</text>
 </svg>

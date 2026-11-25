@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="plot-title plot-desc">
 <title id="plot-title">Vývoj MSE po každé epoše</title>
-<desc id="plot-desc">Srovnání online SGD pro rychlosti učení 0,1 a 0,01 na Linuxu a Windows. Vyšší rychlost se rozbíhá, nižší ztrátu snižuje.</desc>
+<desc id="plot-desc">Srovnání SGD pro rychlosti učení 0,1 a 0,01 na Linuxu a Windows. Vyšší rychlost se rozbíhá, nižší ztrátu snižuje.</desc>
 <rect width="1200" height="720" fill="#ffffff"/>
 <text x="128" y="57" font-size="29" font-weight="700" fill="#142132" font-family="Arial, sans-serif">Vývoj chyby lineární regrese</text>
-<text x="128" y="89" font-size="17" fill="#526171" font-family="Arial, sans-serif">MSE po epoše · online SGD · seed 42 · tři učicí body</text>
+<text x="128" y="89" font-size="17" fill="#526171" font-family="Arial, sans-serif">MSE po epoše · SGD · seed 42 · tři učicí body</text>
 <line x1="128" y1="598.62" x2="1080" y2="598.62" stroke="#dce3eb" stroke-width="1"/>
 <text x="112" y="603.62" text-anchor="end" font-size="15" fill="#526171" font-family="Arial, sans-serif">10^-3</text>
 <line x1="128" y1="533.10" x2="1080" y2="533.10" stroke="#dce3eb" stroke-width="1"/>

@@ -1,8 +1,9 @@
 # 001-LinearRegression
 
 První experiment se skalární lineární regresí v čistém C.
-`Regression` počítá $\hat y=ax+b$, `Optimizer` provádí online i
-dávkový gradientní sestup. `src/main.c` porovnává oba postupy při
+`Regression` počítá $\hat y=ax+b$. `Optimizer` podporuje SGD
+(aktualizaci po každém bodu) a BGD (aktualizaci po celé trénovací
+množině). `src/main.c` porovnává oba postupy při
 `lr = 0.01f` a `lr = 0.1f` během deseti epoch nad třemi body
 zjednodušeného převodu kilometrů na míle.
 
@@ -32,7 +33,8 @@ nelinkuje. Cesty k hlavičkám jsou v platformních konfiguracích přes
 direktiv `#include`. Výstupy platforem se ukládají odděleně do
 `.cache/<platform>/`.
 
-Každý ze čtyř běhů nastavuje seed 42. Online metoda vypisuje
-ztrátu před každým z 30 kroků, dávková MSE před každým z 10
-kroků. Specifikace obsahuje tabulky a grafy MSE po epochách.
+Každý ze čtyř běhů nastavuje seed 42. SGD vypisuje ztrátu před
+každým z 30 kroků, BGD MSE před každým z 10 kroků. SGD prochází
+body v pevném pořadí. Specifikace obsahuje tabulky a grafy MSE
+po epochách.
 Závěr testování čeká na odsouhlasení vlastníkem.
