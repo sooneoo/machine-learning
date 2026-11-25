@@ -92,12 +92,57 @@ static bool test_squared_loss_and_reference(char *error, size_t error_size) {
     return true;
 }
 
+static bool test_batch_gradient_and_update(char *error, size_t error_size) {
+    Regression model = {0};
+    Optimizer training = optimizer(&model);
+    const float x[] = {1.0f, 3.0f, 5.0f};
+    const float y[] = {0.625f, 1.875f, 3.125f};
+    float mse = optimizer_backward_batch(&training, x, y, 3);
+    TEST_ASSERT(close_float(mse, 875.0f / 192.0f), "batch MSE");
+    TEST_ASSERT(close_float(training.ga, -175.0f / 12.0f),
+            "mean slope gradient");
+    TEST_ASSERT(close_float(training.gb, -15.0f / 4.0f),
+            "mean intercept gradient");
+    TEST_ASSERT(model.a == 0.0f && model.b == 0.0f,
+            "batch backward must leave model unchanged");
+    optimizer_update(&training, 0.01f);
+    TEST_ASSERT(close_float(model.a, 7.0f / 48.0f),
+            "batch updated slope");
+    TEST_ASSERT(close_float(model.b, 0.0375f),
+            "batch updated intercept");
+    return true;
+}
+
+static bool test_batch_single_and_reference(char *error, size_t error_size) {
+    Regression model = {0};
+    Optimizer training = optimizer(&model);
+    const float x[] = {2.0f};
+    const float y[] = {1.0f};
+    float online_loss = optimizer_backward(&training, x[0], y[0]);
+    float online_ga = training.ga;
+    float online_gb = training.gb;
+    float batch_loss = optimizer_backward_batch(&training, x, y, 1);
+    TEST_ASSERT(batch_loss == online_loss, "one sample loss");
+    TEST_ASSERT(training.ga == online_ga && training.gb == online_gb,
+            "one sample gradients");
+    model = (Regression) {.a = 0.625f};
+    const float all_x[] = {1.0f, 3.0f, 5.0f};
+    const float all_y[] = {0.625f, 1.875f, 3.125f};
+    TEST_ASSERT(optimizer_backward_batch(&training, all_x, all_y, 3)
+            == 0.0f, "reference batch loss");
+    TEST_ASSERT(training.ga == 0.0f && training.gb == 0.0f,
+            "reference batch gradients");
+    return true;
+}
+
 static const TestCase tests[] = {
     {"forward", test_forward},
     {"seeded constructor", test_constructor},
     {"optimizer initialization", test_optimizer_initialization},
     {"backward and update", test_backward_and_update},
-    {"squared loss and reference", test_squared_loss_and_reference}
+    {"squared loss and reference", test_squared_loss_and_reference},
+    {"batch gradient and update", test_batch_gradient_and_update},
+    {"batch single and reference", test_batch_single_and_reference}
 };
 
 const TestSuite test_suite_regression = {

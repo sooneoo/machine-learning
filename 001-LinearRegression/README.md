@@ -1,12 +1,13 @@
 # 001-LinearRegression
 
 První experiment se skalární lineární regresí v čistém C.
-`Regression` počítá $\hat y=ax+b$, `Optimizer` provádí SGD po
-jednotlivých bodech a `run_online_experiment()` v `src/main.c` řídí
-deset epoch nad třemi body zjednodušeného převodu kilometrů na míle.
+`Regression` počítá $\hat y=ax+b$, `Optimizer` provádí online i
+dávkový gradientní sestup. `src/main.c` porovnává oba postupy při
+`lr = 0.01f` a `lr = 0.1f` během deseti epoch nad třemi body
+zjednodušeného převodu kilometrů na míle.
 
-Architektura, rovnice, akceptační scénáře, skutečné výsledky všech
-30 kroků a navržený závěr jsou v
+Architektura, rovnice, akceptační scénáře, výsledky obou metod a
+navržený závěr jsou v
 [české specifikaci](spec/specifikace-linearni-regrese.md).
 
 ## Překlad a spuštění
@@ -31,7 +32,7 @@ nelinkuje. Cesty k hlavičkám jsou v platformních konfiguracích přes
 direktiv `#include`. Výstupy platforem se ukládají odděleně do
 `.cache/<platform>/`.
 
-První běh používá seed 42 a `lr = 0.1f`. Vypisuje po každém bodu ztrátu
-před aktualizací a parametry po ní. Pozorovaná ztráta prudce roste;
-závěr o použitelnosti konfigurace je ve specifikaci stále jen návrhem.
-Varianty s jiným `lr` a s dávkami se teprve navrhnou.
+Každý ze čtyř běhů nastavuje seed 42. Online metoda vypisuje
+ztrátu před každým z 30 kroků, dávková MSE před každým z 10
+kroků. Specifikace obsahuje tabulky a grafy MSE po epochách.
+Závěr testování čeká na odsouhlasení vlastníkem.
