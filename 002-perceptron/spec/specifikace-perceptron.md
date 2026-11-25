@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 6
+- **Revize:** 7
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -95,16 +95,28 @@ vytváří model a optimalizátor, řídí učení a vyhodnocení AND.
 classDiagram
     direction LR
     class Runner
-    class Optimizer
+    class Optimizer {
+        +backward
+    }
     class Perceptron
     Runner ..> Perceptron : vytváří a vyhodnocuje
-    Runner ..> Optimizer : řídí učení
+    Runner ..> Optimizer : volí funkci a řídí učení
     Optimizer ..> Perceptron : používá a upravuje
 ```
 
-Konkrétní podpisy funkcí, způsob předání modelu a vlastnictví
-dat zatím nejsou určeny. Symboly tříd proto zatím neobsahují
-metody ani atributy.
+Optimizer drží ukazatel `backward` na dávkovou funkci.
+Zvolená veřejná implementace spočítá hodnotu ztráty, její
+derivaci i gradienty všech vah a biasu. Ztrátu vrátí; gradienty
+zpřístupní Optimizeru pro následnou aktualizaci. První
+implementace používá MSE a BGD. Další ztrátová funkce
+může používat stejné volání z Runneru bez změny Perceptronu.
+Nepřímé volání proběhne jednou za dávku, nikoli pro každý vzorek.
+
+Přesné podpisy funkcí, předání délky dávky, vlastnictví dat
+a podoba jednotného obalu volání zatím nejsou určeny. Navržené
+makro s výrazem `T` na dvou místech by jej dvakrát vyhodnotilo.
+Bezpečnou možností je krátká `static inline` funkce; přesnou
+podobu obalu dořešíme při návrhu veřejného rozhraní.
 
 ## 5. Gradient a řetězcové pravidlo
 
@@ -162,17 +174,17 @@ $$
 
 V blízkosti nasycení sigmoidy se její derivace blíží nule,
 takže MSE může při nevhodném počátečním nastavení učit pomalu.
-Zda budeme gradient vyhodnocovat po vzorcích nebo po celé
-tabulce, zatím není rozhodnuto. Oddělená funkce pro
-derivaci ztráty je možná; konkrétní rozhraní a případné
-spojení výpočtů kvůli výkonu vybereme při návrhu Optimizeru.
+Zvolená funkce `backward` počítá ztrátu a průměrné
+gradienty celé čtyřřádkové dávky. Výpočet derivace ztráty
+může uvnitř funkce zůstat oddělený nebo se sloučit s dalšími
+kroky, pokud to zlepší výkon či numerickou stabilitu.
 
 ## 6. Otevřené návrhové otázky
 
-Před implementací společně určíme způsob aktualizace gradientů,
-inicializaci, rozhraní ztrátové funkce, klasifikační práh a
-podmínky ověření. Následně doplníme metodiku a měřitelné
-požadavky experimentu.
+Před implementací společně určíme přesné rozhraní dávkových
+dat a volání `backward`, uložení gradientů, inicializaci,
+klasifikační práh a podmínky ověření. Následně doplníme
+metodiku a měřitelné požadavky experimentu.
 
 ## Slovník pojmů
 
