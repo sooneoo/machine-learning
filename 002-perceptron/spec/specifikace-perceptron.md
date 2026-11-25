@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 7
+- **Revize:** 8
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -51,8 +51,8 @@ libovolný nelineární vztah.
 
 ## 3. Data a ztrátová funkce
 
-První úloha používá úplnou pravdivostní tabulku AND, tedy $n=2$
-vstupy a $N=4$ vzorky:
+První úloha vychází z pravdivostní tabulky AND, tedy $n=2$
+vstupy a čtyři možné binární kombinace:
 
 | $x_1$ | $x_2$ | Cíl $y=x_1\land x_2$ |
 |---:|---:|---:|
@@ -61,7 +61,7 @@ vstupy a $N=4$ vzorky:
 | 1 | 0 | 0 |
 | 1 | 1 | 1 |
 
-Pro tyto vzorky volíme střední kvadratickou chybu
+Pro trénovací dávku o $N>0$ vzorcích volíme střední kvadratickou chybu
 
 $$
 \operatorname{MSE}(\mathbf{w},b)
@@ -80,16 +80,19 @@ blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
 pro návaznost na první experiment; binární křížovou entropii
 (BCE) zatím nepoužijeme.
 
-Úplná tabulka nemá další dosud neviděnou binární kombinaci.
-Ověření správnosti AND proto odlišíme od tvrzení o zobecnění
-na jiná data.
+Kombinace rozdělíme na trénovací a validační množinu;
+konkrétní rozdělení ještě určíme. Validace proběhne až po
+tréninku a neovlivní parametry. Kvůli pouhým čtyřem možným
+binárním vstupům nepůjde z tohoto ověření vyvozovat širší
+zobecnění modelu.
 
 ## 4. Architektura programu
 
 Perceptron uchovává váhy a bias, počítá sigmoidální výstup
 a nezná optimalizátor. Optimizer používá model k výpočtu
 gradientů a aktualizaci parametrů. Runner v souboru main.c
-vytváří model a optimalizátor, řídí učení a vyhodnocení AND.
+vytváří model a optimalizátor, řídí trénování a po něm
+samostatně vyhodnocuje validační množinu.
 
 ```mermaid
 classDiagram
@@ -112,11 +115,13 @@ implementace používá MSE a BGD. Další ztrátová funkce
 může používat stejné volání z Runneru bez změny Perceptronu.
 Nepřímé volání proběhne jednou za dávku, nikoli pro každý vzorek.
 
-Přesné podpisy funkcí, předání délky dávky, vlastnictví dat
-a podoba jednotného obalu volání zatím nejsou určeny. Navržené
-makro s výrazem `T` na dvou místech by jej dvakrát vyhodnotilo.
-Bezpečnou možností je krátká `static inline` funkce; přesnou
-podobu obalu dořešíme při návrhu veřejného rozhraní.
+Jednotné volání `optimizer_backward` zajistí krátká
+`static inline` funkce v hlavičce. Vyhodnotí ukazatel
+na Optimizer pouze jednou a předá volání zvolené funkci
+`backward`. Konstruktor modelu, výpočet výstupu,
+konstruktor optimalizátoru a aktualizace gradientů navážou
+na rozhraní experimentu 001. Přesné podpisy, reprezentace
+vícerozměrných vstupů a vlastnictví paměti ještě určíme.
 
 ## 5. Gradient a řetězcové pravidlo
 
@@ -156,8 +161,8 @@ $$
 $$
 
 Optimizer ji pak řetězovým pravidlem násobí derivací
-sigmoidy a příslušným vstupem. Pro zvolenou MSE celé
-tabulky se navíc sčítá přes vzorky a dělí jejich počtem:
+sigmoidy a příslušným vstupem. Pro zvolenou MSE trénovací
+dávky se navíc sčítá přes vzorky a dělí jejich počtem:
 
 $$
 \frac{\partial\operatorname{MSE}}{\partial w_i}
@@ -175,16 +180,26 @@ $$
 V blízkosti nasycení sigmoidy se její derivace blíží nule,
 takže MSE může při nevhodném počátečním nastavení učit pomalu.
 Zvolená funkce `backward` počítá ztrátu a průměrné
-gradienty celé čtyřřádkové dávky. Výpočet derivace ztráty
+gradienty celé trénovací dávky. Výpočet derivace ztráty
 může uvnitř funkce zůstat oddělený nebo se sloučit s dalšími
 kroky, pokud to zlepší výkon či numerickou stabilitu.
 
-## 6. Otevřené návrhové otázky
+## 6. Metodika a diagnostika
 
-Před implementací společně určíme přesné rozhraní dávkových
-dat a volání `backward`, uložení gradientů, inicializaci,
-klasifikační práh a podmínky ověření. Následně doplníme
-metodiku a měřitelné požadavky experimentu.
+Runner provede BGD: v každé epoše zavolá `backward`
+nad trénovací dávkou, poté aktualizuje parametry. Stejně jako
+v experimentu 001 vypíše počáteční nastavení, pro každou
+epochu ztrátu před aktualizací a váhy s biasem po ní.
+Po poslední epoše vypíše pro každý validační vzorek vstupy,
+očekávaný a předpovězený výstup a nakonec validační MSE.
+Samostatné běhy oddělí prázdným řádkem.
+
+## 7. Otevřené návrhové otázky
+
+Před implementací společně určíme konkrétní rozdělení
+trénovacích a validačních dat, rozhraní dávky, uložení
+gradientů, inicializaci, klasifikační práh, rychlost učení
+a počet epoch. Pak doplníme měřitelné požadavky experimentu.
 
 ## Slovník pojmů
 
@@ -201,7 +216,9 @@ metodiku a měřitelné požadavky experimentu.
 - **Řetězcové pravidlo:** způsob derivace složené funkce; zde
   propojuje derivaci ztráty, sigmoidy a váženého součtu.
 - **MSE:** průměr čtverců rozdílů mezi výstupy neuronu a cíli
-  čtyř kombinací AND.
+  vzorků v dané dávce.
+- **BGD:** aktualizace parametrů jednou po výpočtu průměrného
+  gradientu celé trénovací dávky.
 - **Lineární separovatelnost:** možnost oddělit kombinaci
   $(1,1)$ od ostatních kombinací AND afinní rozhodovací hranicí.
 - **Rozhodovací práh:** mez, která převede spojitý výstup
