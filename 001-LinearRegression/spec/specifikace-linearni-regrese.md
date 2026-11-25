@@ -2,16 +2,16 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
+- **Stav dokumentu:** pracovní návrh prvního online běhu; implementace čeká na výslovné schválení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 11
+- **Revize:** 12
 
 ## 1. Účel dokumentu
 
 Experiment má ukázat, jak navrhnout a ověřit malý systém strojového učení v čistém C bez specializovaného frameworku. Model prokládá body v dvourozměrném grafu přímkou. Hlavním cílem první fáze je společně rozhodnout architekturu, způsob učení, ověřování a měření zdrojů před napsáním algoritmu.
 
-Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od návrhů a otevřených rozhodnutí. Vlastník navrhl oddělení modelu od optimalizátoru, MSE a stochastický gradientní sestup (SGD). Ještě nejsou určeny detaily trénovacího postupu ani jeho akceptační kritéria.
+Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od návrhů a otevřených rozhodnutí. Vlastník navrhl oddělení modelu od optimalizátoru, MSE a stochastický gradientní sestup (SGD). První pozorovací běh má pevné pořadí vzorků, deset epoch a rychlost učení $\eta=0{,}1$. Průběh a přesnost se vyhodnotí po spuštění.
 
 ## 2. Rozsah a hranice
 
@@ -23,9 +23,9 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 - Projekt používá C bez frameworku pro strojové učení a cílem je úsporný výpočet na dostupném hardwaru.
 - Zdrojový kód, veřejné rozhraní, testy a platformní pravidla překladu budou oddělené podle kořenového `AGENTS.md`.
 
-### 2.2 Zatím neurčený rozsah
+### 2.2 První pozorovací běh a další varianty
 
-Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Pro první prototyp je určena trojice učicích bodů; dosud nejsou určeny jejich uložení v programu, pořadí zpracování, hodnota rychlosti učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
+Výchozí metodou je SGD se čtvercovou ztrátou; učí se $a$ i $b$. Tři učicí dvojice budou ve dvou konstantních polích ve funkci `run_online_experiment()`. První běh zpracuje v každé z deseti epoch body v pořadí tabulky. Po každém bodu provede jeden dopředný výpočet, výpočet ztráty a gradientů a ihned aktualizuje parametry; nepoužívá mini dávky. Rychlost učení je po celý první běh $\eta=0{,}1$, bez předčasného ukončení. Výpis po každém bodu ukáže ztrátu a nové parametry. Následné změny rychlosti učení na obě strany budou samostatnými běhy; jejich konkrétní hodnoty a kritéria hodnocení se určí z pozorování. Paralelizace není součástí první verze.
 
 ### 2.3 Učicí sada prototypu
 
@@ -37,7 +37,7 @@ První prototyp používá záměrně zjednodušený převod kilometrů na míle
 | 2 | $3$ | $1{,}875$ |
 | 3 | $5$ | $3{,}125$ |
 
-Všechny tři dvojice jsou určeny k učení; hodnoty zadal vlastník repozitáře dne 2026-11-25. Způsob uložení a předání při běhu se ještě určí. Pro první verzi se předpokládá, že předaná trénovací data jsou platná. Nezavádí se průběžná kontrola jejich hodnot v dopředném výpočtu ani v kroku optimalizátoru.
+Všechny tři dvojice jsou určeny k učení; hodnoty zadal vlastník repozitáře dne 2026-11-25. V `run_online_experiment()` budou hodnoty uloženy ve dvou konstantních polích `x` a `y` stejné délky, odvozené z tabulky. Pro první verzi se předpokládá, že předaná trénovací data jsou platná. Nezavádí se průběžná kontrola jejich hodnot v dopředném výpočtu ani v kroku optimalizátoru.
 
 ## 3. Terminologie a jednotky
 
@@ -82,6 +82,19 @@ $$
 
 $\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadřuje místní sklon ztráty v současném bodě $(a,b)$, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném $\eta$; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci by byl dávkový gradientní sestup. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
 
+Pro první pozorovací běh lze odvodit chování jediného kroku na témž
+bodu. Je-li reziduum $r_i=\hat y_i-y_i$, po aktualizaci obou parametrů
+rychlostí $\eta$ platí:
+
+$$
+r_i'=\left[1-2\eta(x_i^2+1)\right]r_i.
+$$
+
+Pro $x_i=5$ a $\eta=0{,}1$ je násobek rezidua $-4{,}2$ a čtvercová
+ztráta tohoto bodu by bez mezikroků na jiných bodech vzrostla
+$17{,}64$krát. Jde o teoretické varování před příliš velkým krokem,
+nikoli o změřený průběh celé posloupnosti tří bodů.
+
 ### 4.1 Teoretická referenční přímka pro učicí sadu
 
 Za předpokladu zvoleného afinního modelu určují již dva různé vstupy jedinou přímku procházející těmito body. Třetí bod soulad se stejnou přímkou potvrzuje:
@@ -117,7 +130,7 @@ b_0=2\frac{r_b}{\mathrm{RAND\_MAX}}-1,\qquad
 r_a,r_b\in\{0,\ldots,\mathrm{RAND\_MAX}\}
 $$
 
-`Runner` nastaví `srand(seed)` jednou před vytvořením modelu; konstruktor generátor znovu neseeduje. Konkrétní semínko a zdroj bodů zůstávají otevřené. Rozložení a posloupnost hodnot závisí na implementaci `rand()`, takže testy mezi platformami nesmějí předpokládat stejná konkrétní náhodná čísla. `regression_forward` přijímá ukazatel na model a skalár $x$, vrací `float` podle $\hat y=ax+b$ a parametry nemění.
+`run_online_experiment()` nastaví `srand(42)` před vytvořením modelu; konstruktor generátor znovu neseeduje. Budoucí dávkový běh použije vlastní `srand(42)`, aby na téže platformě začal ze stejného stavu. První běh používá body z oddílu 2.3. Rozložení a posloupnost hodnot závisí na implementaci `rand()`, takže testy mezi platformami nesmějí předpokládat stejná konkrétní náhodná čísla. `regression_forward` přijímá ukazatel na model a skalár $x$, vrací `float` podle $\hat y=ax+b$ a parametry nemění.
 
 ### 5.2 Optimalizátor `Optimizer`
 
@@ -137,17 +150,18 @@ void optimizer_update(Optimizer *self, float lr);
 
 `optimizer` vrací strukturu hodnotou a uloží ukazatel na existující `Regression`. Model musí přežít optimalizátor; ani jeden z těchto objektů nevyžaduje dynamickou alokaci. Dva `float` gradienty zůstávají v `Optimizer`, aby model uchovával pouze své parametry. Konstruktor nastaví `ga = gb = 0`. Dokud `optimizer_backward` nevypočte nové gradienty, `optimizer_update` model nezmění. Oproti předávání modelu do každé funkce stojí toto rozhodnutí jeden uložený ukazatel a vyžaduje dodržet jeho životnost, ale odpovídá zvolenému podpisu `optimizer_update`.
 
-`optimizer_backward` použije uložený model a `regression_forward`, pro jeden bod vypočte $e=(\hat y-y)^2$, uloží $g_a$ a $g_b$ podle oddílu 4 do `self->ga` a `self->gb` a vrátí $e$ jako `float`. Gradienty při dalším volání přepíše; v tomto kroku model nemění. `optimizer_update` teprve potom upraví $a$ a $b$ podle uložených gradientů a rychlosti učení $\mathrm{lr}=\eta$. Platnost `lr` a chování při neplatných vstupních hodnotách je třeba ještě určit.
+`optimizer_backward` použije uložený model a `regression_forward`, pro jeden bod vypočte $e=(\hat y-y)^2$, uloží $g_a$ a $g_b$ podle oddílu 4 do `self->ga` a `self->gb` a vrátí $e$ jako `float`. Gradienty při dalším volání přepíše; v tomto kroku model nemění. `optimizer_update` teprve potom upraví $a$ a $b$ podle uložených gradientů a rychlosti učení $\mathrm{lr}=\eta$. První běh předpokládá platné pevné `lr = 0.1f` a nepřidává kontrolu neplatných vstupů.
 
 ### 5.3 UML pohled na moduly
 
-Diagram popisuje role modulů v C, nikoli objektovou hierarchii. Zobrazuje nyní potvrzené atributy, operace a směry závislostí; přesný tok trénovacích dat a vnitřní běh `Runner` se doplní po dalším brainstormingu. Operace v symbolech jsou volné funkce C uvedené v oddílech 5.1 a 5.2, nikoli metody struktur.
+Diagram popisuje role modulů v C, nikoli objektovou hierarchii. Zobrazuje nyní potvrzené atributy, operace a směry závislostí; tok trénovacích dat a vnitřní běh `Runner` upřesňuje následující postup. Operace v symbolech jsou volné funkce C uvedené v oddílech 5.1 a 5.2, nikoli metody struktur.
 
 ```mermaid
 classDiagram
     direction LR
     class Runner {
         +main()
+        +run_online_experiment()
     }
     class Optimizer {
         +regression
@@ -163,22 +177,45 @@ classDiagram
         +regression()
         +regression_forward()
     }
-    Runner ..> Regression : vytváří model a volá predikci
+    Runner ..> Regression : vytváří model
     Runner ..> Optimizer : spouští učení
     Optimizer --> Regression : drží nevlastněný ukazatel
 ```
 
 | Modul | Soubor / rozhraní | Odpovědnost |
 |---|---|---|
-| `Runner` | `src/main.c` | Jednou nastaví semínko, vytvoří model a optimalizátor na zásobníku, řídí postup učení a vyhodnocení. Původ dat a podoba výstupu se ještě určí. |
+| `Runner` | `src/main.c` | Jednou nastaví semínko, vytvoří model a optimalizátor na zásobníku, řídí postup učení a výpis průběhu. `main` zavolá `run_online_experiment()`; ta použije konstantní pole tří učicích dvojic a po každém vzorku vypíše stav. |
 | `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává $a$, $b$, inicializuje je a počítá dopředný výstup; nezná zbývající moduly. |
 | `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Odkazuje na model, počítá ztrátu a gradienty a provádí krok SGD. |
 
-`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Vlastnictví trénovacích bodů, přesný řídicí cyklus a případné chyby vstupů zůstávají otevřené; po jejich odsouhlasení se upraví diagram, popis modulů i odpovídající požadavky a kontroly.
+`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Trénovací pole jsou lokální konstantní hodnoty `run_online_experiment()` v `src/main.c`. `main` tuto funkci pouze zavolá. Následující diagram
+zachycuje první pozorovací běh; `optimizer_backward` sám volá
+`regression_forward`, takže `Runner` neprovádí druhý dopředný výpočet.
+
+```mermaid
+flowchart TD
+    Main[main] --> Seed[run_online_experiment: srand 42]
+    Seed --> Model[Regression na zásobníku]
+    Model --> Opt[Optimizer odkazuje na Regression]
+    Opt --> Data["Konstantní pole x a y, lr 0,1, epoch 10"]
+    Data --> Epoch[Deset epoch]
+    Epoch --> Sample[Body 1, 3, 5 v pevném pořadí]
+    Sample --> Backward[Forward, ztráta a gradienty v backward]
+    Backward --> Update[Update a a b po jednom bodu]
+    Update --> Print[Výpis loss před krokem a parametrů po kroku]
+    Print --> More{Další bod nebo epocha?}
+    More -->|ano| Sample
+    More -->|ne| End[Konec]
+```
+
+Při výpisu je `loss` ztráta vypočtená z parametrů před `update`, zatímco
+`a` a `b` jsou hodnoty po aktualizaci. Číslo epochy a vzorku musí výpis
+jednoznačně označovat. Překladový a běhový postup nezavádí kontrolu
+trénovacích hodnot ani numerické přetečení v horké cestě.
 
 ### 5.4 Vstupní předpoklady prototypu
 
-`Runner` vytvoří `Regression` a `Optimizer` jako lokální hodnoty v `main`, typicky uložené na zásobníku:
+`run_online_experiment()` vytvoří `Regression` a `Optimizer` jako lokální hodnoty na zásobníku; `main` tuto funkci zavolá:
 
 ```c
 Regression model = regression();
@@ -187,9 +224,9 @@ Optimizer training = optimizer(&model);
 
 `Regression` vznikne dříve než `Optimizer` a oba objekty žijí po celý běh učení. Volání používají jejich adresy; `Regression *` uložený v optimalizátoru proto po tuto dobu míří na platný model. `regression_forward`, `optimizer_backward` a `optimizer_update` neprovádějí při každém průchodu opakované kontroly `NULL` u těchto ukazatelů. Platný ukazatel a správná životnost jsou jejich smluvní předpoklady. Porušení předpokladu znamená v C nedefinované chování, nikoli zaručený okamžitý pád.
 
-Pro první verzi se předpokládají také konečné hodnoty parametrů, $x$ a $y$; trénovací data se průběžně nevalidují. Samotná afinní funkce může přijmout i záporné konečné $x$, přestože ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. Pravidla pro neplatné $\mathrm{lr}$ a numerické přetečení zůstávají otevřená. Tento experiment dynamickou alokaci nepotřebuje; pro budoucí experimenty platí jednorázová kontrola výsledku `lib/alloc` bez opakovaného testování ukazatele v horké části algoritmu.
+Pro první verzi se předpokládají také konečné hodnoty parametrů, $x$ a $y$; trénovací data se průběžně nevalidují. Samotná afinní funkce může přijmout i záporné konečné $x$, přestože ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. První běh předpokládá konečné pevné $\mathrm{lr}=0{,}1$; běhová kontrola rychlosti učení ani numerického přetečení se neprovádí. Při výskytu nekonečna nebo `NaN` jej diagnostika pouze zaznamená a plánovaných deset epoch doběhne. Předpoklad platného `lr` je smlouvou volajícího také pro `optimizer_update`. Tento experiment dynamickou alokaci nepotřebuje; pro budoucí experimenty platí jednorázová kontrola výsledku `lib/alloc` bez opakovaného testování ukazatele v horké části algoritmu.
 
-Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
+Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace čeká na výslovné schválení vlastníkem.
 
 ## 6. Výpočetní optimalizace a paralelizace
 
@@ -215,12 +252,18 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-012 | `regression()` musí vrátit hodnotovou strukturu s parametry v intervalu $[-1,1]$, získanými dvěma voláními `rand()` bez dynamické alokace. | Potvrzená architektura; numerické detaily se ověří. |
 | LR-013 | `Optimizer` musí obsahovat nevlastněný ukazatel na `Regression` a vlastní `float` gradienty `ga` a `gb`, inicializované na nulu; model musí žít déle než optimalizátor. | Potvrzená architektura. |
 | LR-014 | `optimizer_backward` musí vrátit čtvercovou ztrátu jednoho bodu, uložit gradienty do `Optimizer` a ponechat model beze změny. | Potvrzený postup SGD. |
-| LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; vstupní smlouva $\mathrm{lr}$ se doplní. |
+| LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; první běh předpokládá platné $\mathrm{lr}$ bez průběžné kontroly. |
 | LR-016 | První prototyp musí použít učicí dvojice $(1;0{,}625)$, $(3;1{,}875)$ a $(5;3{,}125)$ ve vztahu kilometrů k mílím. | Potvrzená učicí sada. |
 | LR-017 | První verze musí považovat trénovací hodnoty $x$ a $y$ za platné vstupy a neprovádět jejich průběžnou validaci v modelu ani optimalizátoru. | Potvrzený vstupní předpoklad. |
-| LR-018 | `Runner` musí vytvořit model a optimalizátor jako lokální hodnoty v `main`, předávat jejich adresy a udržet model živý po celou dobu používání optimalizátoru; horké funkce nesmějí opakovat `NULL` kontroly těchto ukazatelů. | Potvrzený přístup k životnosti a výkonu. |
+| LR-018 | `run_online_experiment()` musí vytvořit model a optimalizátor jako lokální hodnoty, předávat jejich adresy a udržet model živý po celou dobu používání optimalizátoru; `main` tuto funkci zavolá; horké funkce nesmějí opakovat `NULL` kontroly těchto ukazatelů. | Potvrzený přístup k životnosti a výkonu. |
+| LR-019 | `run_online_experiment()` musí zavolat `srand(42)` před `regression()`, poté vytvořit `Optimizer` nad lokálním modelem a uložit tři body do konstantních polí `x` a `y`. `main` tuto funkci pouze zavolá. | Potvrzený první běh. |
+| LR-020 | Online experiment musí provést přesně deset epoch v pevném pořadí bodů 1, 3, 5 a po každém bodu zavolat `optimizer_backward` a `optimizer_update`, bez dávkování či předčasného zastavení. | Potvrzený první běh. |
+| LR-021 | První běh musí používat pevné `lr = 0.1f` a po každém bodu vypsat číslo epochy, bodu, ztrátu před krokem a `a`, `b` po kroku. | Potvrzená diagnostika. |
+| LR-022 | Horké funkce ani online experiment nebudou při prvním běhu průběžně kontrolovat platnost bodů, `lr` či numerické přetečení. | Potvrzený pozorovací režim. |
 
-Požadavky na konvergenci, přesnost parametrů, chování při porušení vstupních předpokladů a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
+Kritéria konvergence a přesnosti parametrů se stanoví až z pozorovaných
+výsledků prvního běhu; identifikátory požadavků zůstanou stabilní.
+Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodsouhlasí.
 
 ## 8. Akceptační scénáře a plán ověření
 
@@ -236,25 +279,26 @@ Požadavky na konvergenci, přesnost parametrů, chování při porušení vstup
 | LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Plánováno; kód neexistuje. |
 | LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Plánováno; kód neexistuje. |
 | LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Teoretický očekávaný výsledek; kód neexistuje. |
-| LR-T11 | LR-013, LR-018 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `main`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Plánováno; kód neexistuje. |
+| LR-T11 | LR-013, LR-018, LR-019 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `run_online_experiment()`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Plánováno; kód neexistuje. |
+| LR-T12 | LR-019, LR-020, LR-021 | Spuštění online experimentu se seedem 42 | Přesně 30 výpisů v pořadí deseti epoch a tří bodů, se ztrátou před a parametry po každém kroku. | Plánováno po schválení implementace. |
 
-Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat sdílený `lib/unit` přes `#include "unit/unit.h"` a překladovou cestu k jeho `include/`. Cíl `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
+První integrační test ověří deset epoch a třicet jednotlivých aktualizací. Jednotkové testy zkontrolují jeden krok podle LR-T05 a zachování platných ukazatelů. Numerické výsledky celého běhu se zaznamenají jako pozorování, nikoli předem stanovená konvergence. Další testy reprodukovatelnosti, hraničních hodnot a výkonu se určí po prvním běhu. `tests/` bude používat sdílený `lib/unit` přes `#include "unit/unit.h"` a překladovou cestu k jeho `include/`. Cíl `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
 | ID | Otázka | Možnosti k diskusi |
 |---|---|---|
 | LR-OP-01 | Jaká je ztráta pro jeden krok SGD? | Rozhodnuto: $e_i=(\hat y_i-y_i)^2$, tedy MSE pro jeden bod. |
-| LR-OP-02 | Jak řídit průchod SGD? | Pořadí bodů, pevná či proměnná rychlost učení, počet epoch, kritérium ukončení a případné mini dávky. |
+| LR-OP-02 | Jak řídit průchod SGD? | Rozhodnuto pro první běh: pevné pořadí 1, 3, 5, deset epoch, `lr = 0.1f`, aktualizace po bodu, bez mini dávek a předčasného ukončení. |
 | LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: $a$ i $b$; $b=0$ lze použít jako počáteční hodnotu. |
-| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Rozhodnuto: první učicí sada má tři dvojice z oddílu 2.3. Otevřené: zdroj při běhu a reprezentace v `Runner`. |
+| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Rozhodnuto: dvě lokální konstantní pole `x` a `y` v `run_online_experiment()` podle oddílu 2.3. |
 | LR-OP-05 | Jaký je veřejný podpis dopředné funkce? | Rozhodnuto: `float regression_forward(Regression *self, float x)`. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
-| LR-OP-07 | Jak prezentovat proložení bodů? | Číselný výstup, export bodů a přímky pro graf nebo vlastní vizualizace. |
-| LR-OP-08 | Jak zvolit semínko generátoru? | `Runner` volá `srand` před konstrukcí; konkrétní zdroj semínka a jeho výchozí hodnota se určí. |
-| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění; trénovací $x$, $y$ a ukazatele na živé lokální objekty se považují za platné bez opakovaných kontrol. Otevřené: platnost $\mathrm{lr}$ a přetečení. |
+| LR-OP-07 | Jak prezentovat proložení bodů? | První běh vypíše po každém vzorku epochu, bod, ztrátu před krokem a `a`, `b` po kroku. Graf nebo export mohou následovat po vyhodnocení. |
+| LR-OP-08 | Jak zvolit semínko generátoru? | Rozhodnuto: Každý pozorovací běh volá `srand(42)` před vytvořením modelu. Výsledné hodnoty `rand()` se mohou mezi platformami lišit. |
+| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění; trénovací $x$, $y$ a ukazatele na živé lokální objekty se považují za platné bez opakovaných kontrol. Pro první běh se `lr` ani přetečení neověřují; případný `NaN` či nekonečno se zaznamená jako pozorování. |
 
-Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Před implementací je třeba odsouhlasit otevřené detaily a akceptační kritéria.
+Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Další běhy s menším a větším `lr` a jejich metriky se navrhnou po vyhodnocení prvního běhu.
 
 ## 10. Výsledky testování a závěr
 
@@ -271,7 +315,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
 | Překlad pro Windows | `config/win32_x86_64.mk` |
 
-Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Po schválení rozhodnutí se stav dokumentu upraví a začnou se implementovat odpovídající moduly a testy.
+Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Po výslovném schválení zahájení implementace se stav dokumentu upraví a začnou se vytvářet odpovídající moduly a testy.
 
 ## 12. Vysvětlující slovník odborných pojmů
 
@@ -294,6 +338,8 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Runner:** Vstupní modul experimentu v `src/main.c`, který řídí spolupráci modelu a optimalizátoru.
 - **UML diagram:** Grafické znázornění modulů, jejich rozhraní a směru závislostí; šipka s plnou čarou zde vyjadřuje uložený ukazatel na model.
 - **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
+- **Epocha:** Jeden průchod všemi třemi trénovacími body; první běh jich provede deset.
+- **Mini dávka:** Skupina bodů se společnou aktualizací gradientu; první běh ji nepoužívá.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
 - **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž bude prototyp upravovat parametry $a$ a $b$.
 - **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty a ukazatele na živé objekty bez průběžné kontroly.
