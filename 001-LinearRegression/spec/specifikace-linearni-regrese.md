@@ -4,8 +4,8 @@
 - **Větev:** `experiment/001-linear-regression`
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
-- **Datum:** 2026-11-24
-- **Revize:** 7
+- **Datum:** 2026-11-25
+- **Revize:** 8
 
 ## 1. Účel dokumentu
 
@@ -25,7 +25,7 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 
 ### 2.2 Zatím neurčený rozsah
 
-Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Dosud nejsou určeny původ a reprezentace bodů, pořadí jejich zpracování, rychlost učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
+Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Dosud nejsou určeny původ a reprezentace bodů, pořadí jejich zpracování, hodnota rychlosti učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
 
 ## 3. Terminologie a jednotky
 
@@ -72,45 +72,88 @@ $\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadř
 
 ## 5. Požadavky na architekturu řešení
 
-Zadání předpokládá tuto hodnotovou reprezentaci modelu:
+### 5.1 Model `Regression`
+
+Modul modelu nezná optimalizátor. Veřejná struktura obsahuje pouze dva učitelné parametry. Dohodnuté rozhraní má tuto podobu:
 
 ```c
 typedef struct {
     float a;
     float b;
 } Regression;
+
+Regression regression(void);
+float regression_forward(Regression *self, float x);
 ```
 
-Zamýšlené veřejné rozhraní obsahuje funkci `regression_forward`, která pro dané `x` vrací `self->a * x + self->b`. Struktura má být veřejná v `include/regression/regression.h`, zdrojový soubor v `src/` a jednotkové testy v `tests/`. Data, která se vejdou do automatické paměti, mají zůstat na zásobníku; případná dynamická paměť musí procházet `lib/alloc`.
+`regression()` vrací strukturu hodnotou, bez dynamické alokace. Pro $a$ a $b$ zvlášť zavolá `rand()` a jeho celočíselný výsledek lineárně převede do intervalu $[-1,1]$:
 
-Veřejný název typu je `Regression`. Přesný podpis dopředné funkce včetně případného `const` ukazatele se potvrdí před vytvořením veřejné hlavičky.
+$$
+a_0=2\frac{r_a}{\mathrm{RAND\_MAX}}-1,\qquad
+b_0=2\frac{r_b}{\mathrm{RAND\_MAX}}-1,\qquad
+r_a,r_b\in\{0,\ldots,\mathrm{RAND\_MAX}\}
+$$
 
-Model bude v `src/regression.c` a veřejném `include/regression/regression.h`. Bude uchovávat $a$, $b$ a počítat dopředný výstup, bez závislosti na optimalizátoru. `src/optimizer.c` a `include/regression/optimizer.h` budou znát veřejné rozhraní modelu a budou počítat ztrátu, gradienty a aktualizaci parametrů. Závislost je jednosměrná: `optimizer` → `regression`. Výpočet gradientu je specifický pro tento model, bez obecné vrstvy optimalizátorů. $a$ a $b$ jsou učitelné parametry modelu; rychlost učení $\eta$ a případně počet průchodů jsou hyperparametry postupu učení. Přesné podpisy funkcí a vlastnictví trénovacích dat ještě nejsou určeny.
+`Runner` nastaví `srand(seed)` jednou před vytvořením modelu; konstruktor generátor znovu neseeduje. Konkrétní semínko a zdroj bodů zůstávají otevřené. Rozložení a posloupnost hodnot závisí na implementaci `rand()`, takže testy mezi platformami nesmějí předpokládat stejná konkrétní náhodná čísla. `regression_forward` přijímá ukazatel na model a skalár $x$, vrací `float` podle $\hat y=ax+b$ a parametry nemění.
 
-### 5.1 UML pohled na moduly
+### 5.2 Optimalizátor `Optimizer`
 
-Diagram popisuje role modulů v C, nikoli požadavek na objektovou hierarchii. Šipka směřuje od modulu, který používá rozhraní, k modulu, který je poskytuje. Symboly jsou zatím záměrně bez členů: v této fázi brainstormingu zachycují potvrzené role a závislosti, nikoli definitivní veřejná rozhraní. Potvrzené atributy typu `Regression` jsou uvedeny výše; zbývající rozhraní, vlastnictví dat a jejich tok se do diagramu doplní po společném rozhodnutí.
+Optimalizátor uchovává gradienty pro poslední zpracovaný bod a nevlastněný ukazatel na model. Veřejná hlavička `include/regression/optimizer.h` používá `include/regression/regression.h`; opačná závislost nevzniká. Dohodnuté rozhraní má tuto podobu:
+
+```c
+typedef struct {
+    Regression *regression;
+    float ga;
+    float gb;
+} Optimizer;
+
+Optimizer optimizer(Regression *regression);
+float optimizer_backward(Optimizer *self, float x, float y);
+void optimizer_update(Optimizer *self, float lr);
+```
+
+`optimizer` vrací strukturu hodnotou a uloží ukazatel na existující `Regression`. Model musí přežít optimalizátor; ani jeden z těchto objektů nevyžaduje dynamickou alokaci. Dva `float` gradienty zůstávají v `Optimizer`, aby model uchovával pouze své parametry. Konstruktor nastaví `ga = gb = 0`. Dokud `optimizer_backward` nevypočte nové gradienty, `optimizer_update` model nezmění. Oproti předávání modelu do každé funkce stojí toto rozhodnutí jeden uložený ukazatel a vyžaduje dodržet jeho životnost, ale odpovídá zvolenému podpisu `optimizer_update`.
+
+`optimizer_backward` použije uložený model a `regression_forward`, pro jeden bod vypočte $e=(\hat y-y)^2$, uloží $g_a$ a $g_b$ podle oddílu 4 do `self->ga` a `self->gb` a vrátí $e$ jako `float`. Gradienty při dalším volání přepíše; v tomto kroku model nemění. `optimizer_update` teprve potom upraví $a$ a $b$ podle uložených gradientů a rychlosti učení $\mathrm{lr}=\eta$. Platnost `lr` a chování při neplatných vstupních hodnotách je třeba ještě určit.
+
+### 5.3 UML pohled na moduly
+
+Diagram popisuje role modulů v C, nikoli objektovou hierarchii. Zobrazuje nyní potvrzené atributy, operace a směry závislostí; přesný tok trénovacích dat a vnitřní běh `Runner` se doplní po dalším brainstormingu. Operace v symbolech jsou volné funkce C uvedené v oddílech 5.1 a 5.2, nikoli metody struktur.
 
 ```mermaid
 classDiagram
     direction LR
-    class Runner
-    class Optimizer
-    class Regression
+    class Runner {
+        +main()
+    }
+    class Optimizer {
+        +regression
+        +ga
+        +gb
+        +optimizer()
+        +optimizer_backward()
+        +optimizer_update()
+    }
+    class Regression {
+        +a
+        +b
+        +regression()
+        +regression_forward()
+    }
     Runner ..> Regression : vytváří model a volá predikci
     Runner ..> Optimizer : spouští učení
-    Optimizer ..> Regression : čte a upravuje parametry
+    Optimizer --> Regression : drží nevlastněný ukazatel
 ```
 
 | Modul | Soubor / rozhraní | Odpovědnost |
 |---|---|---|
-| `Runner` | `src/main.c` | Řídí běh experimentu, připraví model, předá jej optimalizátoru a vyvolá vyhodnocení. Způsob získání dat a výstupu se ještě určí. |
-| `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává parametry a počítá dopředný výstup; nezná `Optimizer` ani `Runner`. |
-| `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Používá veřejné rozhraní `Regression` pro výpočet ztráty, gradientů a kroků SGD. |
+| `Runner` | `src/main.c` | Jednou nastaví semínko, vytvoří model a optimalizátor na zásobníku, řídí postup učení a vyhodnocení. Původ dat a podoba výstupu se ještě určí. |
+| `Regression` | `src/regression.c`, `include/regression/regression.h` | Uchovává $a$, $b$, inicializuje je a počítá dopředný výstup; nezná zbývající moduly. |
+| `Optimizer` | `src/optimizer.c`, `include/regression/optimizer.h` | Odkazuje na model, počítá ztrátu a gradienty a provádí krok SGD. |
 
-`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Přesná veřejná API a tok trénovacích dat zůstávají otevřené do dalšího návrhu; po jejich odsouhlasení se upraví diagram, popis modulů i odpovídající požadavky a kontroly.
+`tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Vlastnictví trénovacích bodů, přesný řídicí cyklus a případné chyby vstupů zůstávají otevřené; po jejich odsouhlasení se upraví diagram, popis modulů i odpovídající požadavky a kontroly.
 
-Rozdělení datových toků trénování zůstává otevřené do upřesnění SGD. Konfigurace `linux_x86_64` je výchozí. Pro Windows je připravena konfigurace `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
+Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
 ## 6. Výpočetní optimalizace a paralelizace
 
@@ -132,7 +175,11 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
 | LR-009 | Ztráta pro $N>0$ bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu $\hat y_i-y_i$. | Potvrzený výchozí směr; numerická smlouva se doplní. |
 | LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
-| LR-011 | `Runner` v `src/main.c` musí koordinovat použití `Regression` a `Optimizer`; závislosti mezi moduly musí odpovídat diagramu v oddílu 5.1. | Potvrzená architektura. |
+| LR-011 | `Runner` v `src/main.c` musí koordinovat použití `Regression` a `Optimizer`; závislosti mezi moduly musí odpovídat diagramu v oddílu 5.3. | Potvrzená architektura. |
+| LR-012 | `regression()` musí vrátit hodnotovou strukturu s parametry v intervalu $[-1,1]$, získanými dvěma voláními `rand()` bez dynamické alokace. | Potvrzená architektura; numerické detaily se ověří. |
+| LR-013 | `Optimizer` musí obsahovat nevlastněný ukazatel na `Regression` a vlastní `float` gradienty `ga` a `gb`, inicializované na nulu; model musí žít déle než optimalizátor. | Potvrzená architektura. |
+| LR-014 | `optimizer_backward` musí vrátit čtvercovou ztrátu jednoho bodu, uložit gradienty do `Optimizer` a ponechat model beze změny. | Potvrzený postup SGD. |
+| LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; vstupní smlouva $\mathrm{lr}$ se doplní. |
 
 Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
@@ -144,8 +191,11 @@ Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou do
 | LR-T02 | LR-002, LR-003 | $a=2$, $b=0$, $x=3$ | $\hat y=6$ | Plánováno; kód neexistuje. |
 | LR-T03 | LR-002 | $a=-1$, $b=2$, $x=-2$ | $\hat y=4$ | Plánováno; kód neexistuje. |
 | LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Plánováno; kód neexistuje. |
-| LR-T05 | LR-010 | $a=b=0$, $x=2$, $y=1$, $\eta=0{,}1$ | $g_a=-4$, $g_b=-2$; po jednom kroku $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
+| LR-T05 | LR-010, LR-013, LR-014, LR-015 | $a=b=0$, $x=2$, $y=1$, $\mathrm{lr}=0{,}1$ | `backward` vrátí $e=1$ a uloží $g_a=-4$, $g_b=-2$ bez změny modelu; `update` nastaví $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
 | LR-T06 | LR-008, LR-011 | Kontrola závislostí zdrojových modulů | `Runner` používá model a optimalizátor; `Optimizer` používá model; `Regression` nemá závislost na zbývajících dvou modulech. | Plánováno; kód neexistuje. |
+| LR-T07 | LR-012 | Dvě volání `regression()` po `srand(seed)` s pevným semínkem | Oba parametry leží v $[-1,1]$; opakování se stejným semínkem na téže platformě vrátí stejnou dvojici modelů. | Plánováno; kód neexistuje. |
+| LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Plánováno; kód neexistuje. |
+| LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Plánováno; kód neexistuje. |
 
 Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
@@ -157,9 +207,11 @@ Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou 
 | LR-OP-02 | Jak řídit průchod SGD? | Pořadí bodů, pevná či proměnná rychlost učení, počet epoch, kritérium ukončení a případné mini dávky. |
 | LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: $a$ i $b$; $b=0$ lze použít jako počáteční hodnotu. |
 | LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Pevná testovací sada, pole předaná API, soubor či generátor. |
-| LR-OP-05 | Jaký je přesný veřejný podpis dopředné funkce? | Rozhodnout o `const` u vstupního ukazatele. |
+| LR-OP-05 | Jaký je veřejný podpis dopředné funkce? | Rozhodnuto: `float regression_forward(Regression *self, float x)`. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
 | LR-OP-07 | Jak prezentovat proložení bodů? | Číselný výstup, export bodů a přímky pro graf nebo vlastní vizualizace. |
+| LR-OP-08 | Jak zvolit semínko generátoru? | `Runner` volá `srand` před konstrukcí; konkrétní zdroj semínka a jeho výchozí hodnota se určí. |
+| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0` a `update` před `backward` nic nezmění. Otevřené: konečnost $x$, $y$, $\mathrm{lr}$, kladnost $\mathrm{lr}$ a případné přetečení. |
 
 Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Před implementací je třeba odsouhlasit otevřené detaily a akceptační kritéria.
 
@@ -199,4 +251,6 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Identická aktivace:** Výstup se rovná vstupu aktivace, proto model vrací přímo $ax+b$.
 - **Referenční sekvenční chování:** Jednovláknový výsledek určený pro kontrolu budoucích výkonnostních změn.
 - **Runner:** Vstupní modul experimentu v `src/main.c`, který řídí spolupráci modelu a optimalizátoru.
-- **UML diagram:** Grafické znázornění rolí modulů a směru jejich závislostí; šipka v tomto dokumentu míří na používané rozhraní.
+- **UML diagram:** Grafické znázornění modulů, jejich rozhraní a směru závislostí; šipka s plnou čarou zde vyjadřuje uložený ukazatel na model.
+- **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
+- **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
