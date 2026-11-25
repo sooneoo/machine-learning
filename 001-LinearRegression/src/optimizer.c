@@ -1,3 +1,8 @@
+/**
+ * @file optimizer.c
+ * @brief Loss gradients and in-place parameter updates.
+ */
+
 #include "regression/optimizer.h"
 
 Optimizer optimizer(Regression *regression) {

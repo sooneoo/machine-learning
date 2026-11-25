@@ -5,7 +5,7 @@
 - **Stav dokumentu:** běhy SGD, BGD i validace ověřeny; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 21
+- **Revize:** 22
 
 ## 1. Účel dokumentu
 
@@ -722,6 +722,9 @@ Závěr zatím **není odsouhlasen vlastníkem**.
 | Jednotkové testy | `tests/test_regression.c`, `tests/main.c`, `../lib/unit/src/unit.c`, `../lib/unit/include/unit/unit.h` |
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
 | Překlad pro Windows | `config/win32_x86_64.mk` |
+| Dokumentace zdrojového API | `Doxyfile`, komentáře v `include/regression/` a `src/` |
+
+`Doxyfile` připravuje anglickou dokumentaci zdrojového API do ignorovaného adresáře `.cache/doxygen/`. Generování se spouští pouze ručně na vyžádání a není součástí překladu, testů ani běhu experimentu.
 
 Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Další změna trénovací strategie se nejprve upřesní ve specifikaci a projde společným rozhodnutím podle kořenového `AGENTS.md`.
 

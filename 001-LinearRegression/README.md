@@ -11,6 +11,19 @@ Architektura, rovnice, akceptační scénáře, výsledky obou metod a
 navržený závěr jsou v
 [české specifikaci](spec/specifikace-linearni-regrese.md).
 
+## Dokumentace zdrojového kódu
+
+Veřejné rozhraní a důležité části implementace obsahují anglické
+komentáře pro Doxygen. Konfigurace je v `Doxyfile` v kořeni projektu.
+Dokumentaci lze na vyžádání vytvořit ručně z adresáře projektu:
+
+```sh
+doxygen Doxyfile
+```
+
+Výstup vznikne v ignorovaném adresáři `.cache/doxygen/`. Běžný
+překlad, spuštění ani testy Doxygen nespouštějí.
+
 ## Překlad a spuštění
 
 Linux x86-64:

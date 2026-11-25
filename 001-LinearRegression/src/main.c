@@ -1,3 +1,8 @@
+/**
+ * @file main.c
+ * @brief Run SGD and BGD experiments and evaluate held-out points.
+ */
+
 #include "regression/optimizer.h"
 #include "regression/regression.h"
 
@@ -5,6 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/**
+ * @brief Train with one update per sample and validate the final model.
+ * @param[in] lr Learning rate for all ten epochs.
+ * @note Validation samples are not passed to the optimizer.
+ */
 static void run_sgd_experiment(float lr) {
     srand(42);
     Regression model = regression();
@@ -48,6 +58,11 @@ static void run_sgd_experiment(float lr) {
 }
 
 
+/**
+ * @brief Train with one full-batch update per epoch, then validate.
+ * @param[in] lr Learning rate for all ten epochs.
+ * @note Validation samples are not passed to the optimizer.
+ */
 static void run_bgd_experiment(float lr) {
     srand(42);
     Regression model = regression();
@@ -87,6 +102,10 @@ static void run_bgd_experiment(float lr) {
 }
 
 
+/**
+ * @brief Compare SGD and BGD at two learning rates with seed 42.
+ * @return Zero after all four experiment runs.
+ */
 int main(void) {
     run_sgd_experiment(0.01f);
     run_bgd_experiment(0.01f);

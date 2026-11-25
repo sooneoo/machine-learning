@@ -1,3 +1,8 @@
+/**
+ * @file regression.c
+ * @brief Seeded parameter initialization and affine prediction.
+ */
+
 #include "regression/regression.h"
 
 #include <stdlib.h>
