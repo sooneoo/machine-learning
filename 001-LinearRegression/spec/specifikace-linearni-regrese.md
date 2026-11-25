@@ -5,7 +5,7 @@
 - **Stav dokumentu:** implementovaný první online běh; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 13
+- **Revize:** 15
 
 ## 1. Účel dokumentu
 
@@ -92,7 +92,9 @@ $$
 
 Pro $x_i=5$ a $\eta=0{,}1$ je násobek rezidua $-4{,}2$ a čtvercová
 ztráta tohoto bodu by bez mezikroků na jiných bodech vzrostla
-$17{,}64$krát. Jde o teoretické varování před příliš velkým krokem,
+$17{,}64$krát. Pro $\eta=0{,}01$ je na stejném bodě násobek rezidua $0{,}48$
+a jeho čtvercové ztráty $0{,}2304$. Jde o teoretické porovnání
+jednotlivého kroku a varování před příliš velkým krokem,
 nikoli o změřený průběh celé posloupnosti tří bodů.
 
 ### 4.1 Teoretická referenční přímka pro učicí sadu
@@ -297,6 +299,7 @@ Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez z
 | LR-OP-07 | Jak prezentovat proložení bodů? | První běh vypíše po každém vzorku epochu, bod, ztrátu před krokem a `a`, `b` po kroku. Graf nebo export mohou následovat po vyhodnocení. |
 | LR-OP-08 | Jak zvolit semínko generátoru? | Rozhodnuto: Každý pozorovací běh volá `srand(42)` před vytvořením modelu. Výsledné hodnoty `rand()` se mohou mezi platformami lišit. |
 | LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění; trénovací $x$, $y$ a ukazatele na živé lokální objekty se považují za platné bez opakovaných kontrol. Pro první běh se `lr` ani přetečení neověřují; případný `NaN` či nekonečno se zaznamená jako pozorování. |
+| LR-OP-10 | Způsobuje aktualizace po jednotlivých bodech kolísání jejich ztrát? | Hypotéza vlastníka; ověřit v dalším experimentu s dávkovým gradientem při stejných počátečních podmínkách. Přesné pravidlo dávkové aktualizace se nejprve společně stanoví. |
 
 Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Další běhy s menším a větším `lr` a jejich metriky se navrhnou po vyhodnocení prvního běhu.
 
@@ -361,18 +364,75 @@ Odvození vysvětluje riziko velkého kroku, ale nenahrazuje měření celé
 posloupnosti; v běhu se mezi opakováními bodu $x=5$ mění model i na
 ostatních dvou bodech.
 
-Známé hranice: jde o tři syntetické body, jednu rychlost učení a
-deset epoch. Není implementován dávkový běh, jiná rychlost učení,
-kontrola vstupů ani ochrana před numerickým přetečením.
-Nebylo měřeno finální MSE po posledním kroku, rychlost, spotřeba
-paměti ani srovnání s frameworkem. Z testů nelze vyvozovat obecnou
-vlastnost SGD ani chování mimo tuto učicí sadu.
+### 10.1 Doplňující pozorování při $\eta=0{,}01$
+
+Dne 2026-11-25 vlastník v pracovním stromu změnil pouze `lr` v
+`src/main.c` z `0.1f` na `0.01f`. Změna zdrojového souboru zatím
+není commitnutá. Při stejných třech bodech, seedu 42 a deseti epochách
+byl znovu spuštěn `make PLATFORM=linux_x86_64 exec` v WSL Arch a
+`mingw32-make PLATFORM=win32_x86_64 exec` ve Windows. Oba běhy
+vypsaly 30 kroků.
+
+Pro srovnání epoch byla z hodnot $a$ a $b$ vypsaných po třetím bodu
+vypočtena MSE celé trojice podle rovnice v oddílu 4. Jde o **odvozenou
+hodnotu z výpisu zaokrouhleného na devět platných číslic**, nikoli o
+samostatné měření MSE uvnitř programu. Hodnoty v tabulce jsou přibližné:
+
+| Epocha | MSE po epoše, Linux | MSE po epoše, Windows |
+|---:|---:|---:|
+| 1 | 4,39579732 | 5,89804957 |
+| 2 | 0,607367871 | 0,927163973 |
+| 3 | 0,0831486471 | 0,196849255 |
+| 4 | 0,011717784 | 0,0807702486 |
+| 5 | 0,00237971834 | 0,058599886 |
+| 6 | 0,00129182992 | 0,0525598163 |
+| 7 | 0,00120112668 | 0,0499039603 |
+| 8 | 0,00119302589 | 0,0481575106 |
+| 9 | 0,00117605602 | 0,0467181322 |
+| 10 | 0,0011508 | 0,0454066303 |
+
+Na obou platformách tak MSE po každé epoše v tomto běhu klesla.
+Po desáté epoše byly parametry v Linuxu přibližně
+$(a,b)=(0{,}608672321;0{,}069956474)$ a ve Windows
+$(0{,}726736009;-0{,}43864736)$; referencí je
+$(0{,}625;0)$. Ztráta jednotlivého bodu před jeho aktualizací
+není totéž co MSE modelu po epoše: ve Windows ztráta bodu $x=5$
+po páté epoše dočasně vzrostla, přestože MSE celé sady dále klesala.
+
+Pozorování podporuje vysvětlení, že `lr = 0.1f` způsobovalo
+přestřelování minima a divergenci tohoto běhu; `lr = 0.01f`
+vedlo za stejných podmínek k poklesu celkové ztráty. Odvození
+faktoru $0{,}48$ pro jeden krok na $x=5$ je s tím slučitelné,
+ale samo o sobě nezaručuje pokles MSE po celé epoše.
+
+**Hypotéza vlastníka k ověření:** Dočasné zvýšení ztráty jednotlivého
+bodu souvisí s tím, že online SGD aktualizuje model po každém vzorku,
+bez výpočtu gradientu nad celou dávkou. Tato příčina zatím nebyla
+ověřena dávkovým během. Dávkový gradient může změnit průběh učení,
+ale sám nezaručuje pokles ztráty každého bodu ani stabilitu při
+libovolném `lr`.
+
+Další experiment porovná online aktualizaci s dávkovou při stejných
+bodech, počátečním seedu, počtu epoch a rychlosti učení. Budou se
+sledovat MSE celé sady po každé epoše i ztráty jednotlivých bodů.
+Před implementací se společně určí přesná definice dávkového
+gradientu, způsob aktualizace a akceptační kritéria; tento dokument
+zatím neoznačuje hypotézu za potvrzený závěr.
+
+Známé hranice: jde o tři syntetické body, dvě ručně nastavené rychlosti
+učení a deset epoch. Program neumí během jednoho spuštění srovnat
+více hodnot `lr` ani dávkový běh. Nekontroluje vstupy ani numerické
+přetečení. Finální MSE není přímo měřena programem; nebyla měřena
+rychlost, spotřeba paměti ani srovnání s frameworkem. Z těchto dvou
+běhů nelze vyvozovat obecnou vlastnost SGD ani chování mimo učicí sadu.
 
 **Navržený závěr k odsouhlasení:** Implementace správně vykonává
 schválené online kroky a poskytuje opakovatelný průběh na každé
-platformě. Pro proložení zadaných bodů je tato konfigurace
-`lr = 0.1f` po deseti epochách nepoužitelná, protože pozorovaná
-ztráta prudce roste. Experiment je použitelný jako základ pro
+platformě. Pro proložení zadaných bodů je konfigurace `lr = 0.1f`
+po deseti epochách nepoužitelná, protože pozorovaná ztráta prudce
+roste. Při `lr = 0.01f` MSE po každé z deseti epoch klesla, ale pro
+hodnocení dostatečné přesnosti zatím nebyla stanovena tolerance.
+Experiment je použitelný jako základ pro
 zkoumání vlivu rychlosti učení a pozdější srovnání s dávkovou
 aktualizací. Závěr zatím **není odsouhlasen vlastníkem**.
 
@@ -412,8 +472,12 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
 - **Epocha:** Jeden průchod všemi třemi trénovacími body; první běh jich provede deset.
 - **Mini dávka:** Skupina bodů se společnou aktualizací gradientu; první běh ji nepoužívá.
+- **Dávkový gradient:** Gradient vypočtený z celé zvolené skupiny bodů před společnou aktualizací parametrů; jeho konkrétní pravidlo bude před dalším experimentem určeno.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
 - **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž bude prototyp upravovat parametry $a$ a $b$.
 - **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty a ukazatele na živé objekty bez průběžné kontroly.
 - **Životnost objektu:** Doba, po kterou lze přistupovat k lokální struktuře; `Regression` musí zůstat živý, dokud na něj odkazuje `Optimizer`.
 - **Nedefinované chování:** Situace bez zaručeného výsledku podle pravidel C, například dereference neplatného ukazatele; program nemusí ihned skončit.
+- **Přestřelení minima:** Příliš velký krok, který na bodu $x=5$ překročí oblast nižší ztráty a obrátí znaménko rezidua.
+- **Divergence:** Růst chyby při opakovaných krocích; při `lr = 0.1f` se v tomto běhu zvětšovala ztráta bodu $x=5$.
+- **MSE po epoše:** Průměr čtvercových chyb všech tří bodů vyhodnocených se stejnými parametry po dokončení epochy.
