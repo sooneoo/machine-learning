@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 10
+- **Revize:** 11
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -74,9 +74,10 @@ $$
 \right).
 $$
 
-AND je lineárně separovatelná: jediný neuron může po zavedení
-rozhodovacího prahu rozlišit všechny čtyři kombinace. Sigmoida
-zajišťuje hladký, diferencovatelný výstup, ale pro konečné
+AND je lineárně separovatelná: lze zvolit váhy a bias tak,
+aby výstup pro $(1,1)$ převýšil výstupy ostatních kombinací.
+V tomto běhu však spojitý výstup nepřevádíme na třídy.
+Sigmoida zajišťuje hladký, diferencovatelný výstup, ale pro konečné
 parametry nikdy nevrátí přesně $0$ ani $1$; MSE se proto může
 blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
 pro návaznost na první experiment; binární křížovou entropii
@@ -116,6 +117,10 @@ classDiagram
         +backward
         +gw
         +gb
+        +optimizer()
+        +optimizer_backward()
+        +optimizer_backward_mse()
+        +optimizer_update()
     }
     class Perceptron {
         +w
@@ -148,23 +153,38 @@ float perceptron_forward(Perceptron *self, const float x[2]);
 ```
 
 Konstruktor vrací strukturu hodnotou a náhodně inicializuje
-obě váhy i bias pomocí `rand()` po vzoru experimentu 001.
-Runner před jeho voláním nastaví `srand(42)`.
+obě váhy i bias pomocí `rand()`, jehož výsledky převede
+do intervalu $[-1,1]$ jako v experimentu 001. Runner před
+voláním konstruktoru nastaví `srand(42)`.
 Stejné semínko nezaručuje stejnou posloupnost `rand()`
 v různých C runtime. Funkce `perceptron_forward`
 přijímá dvojici vstupů, vypočte
 $z=w_1x_1+w_2x_2+b$ a vrátí $\sigma(z)$.
 
+Konstruktor a aktualizace navazují na experiment 001:
+
+```c
+Optimizer optimizer(Perceptron *model);
+float optimizer_backward_mse(Optimizer *self,
+        const float inputs[][2], const float targets[], size_t count);
+void optimizer_update(Optimizer *self, float lr);
+```
+
+`optimizer()` vrátí strukturu hodnotou, uloží nevlastněný
+ukazatel na model, nastaví funkci `backward` na veřejnou
+MSE variantu a nechá gradienty nulové. Před prvním výpočtem
+gradientů proto `optimizer_update()` parametry nezmění.
+Pro jinou ztrátu lze po konstrukci přiřadit do `backward`
+jinou veřejnou dávkovou funkci se stejným podpisem.
 Jednotné volání `optimizer_backward` zajistí krátká
-`static inline` funkce v hlavičce. Vyhodnotí ukazatel
-na Optimizer pouze jednou a předá volání zvolené funkci
-`backward`. Konstruktor modelu, výpočet výstupu,
-konstruktor optimalizátoru a aktualizace gradientů navážou
-na rozhraní experimentu 001. Dávka používá řádky po dvou
-hodnotách, samostatné pole cílů a počet vzorků, například
-`optimizer_backward(&training, inputs, targets, 4)`.
-Podpis konstruktoru Optimizeru a rozsah náhodné
-inicializace ještě určíme.
+`static inline` funkce v hlavičce, která předá argumenty
+zvolené funkci `backward`.
+Dávka používá řádky po dvou hodnotách, samostatné pole
+cílů a počet vzorků; data se nekopírují.
+
+Samostatný výpočet gradientu jednoho vzorku a aktualizaci
+jen jedné váhy z experimentu 001 zde nepřebíráme:
+první úloha používá výhradně BGD nad celou tabulkou AND.
 
 ## 5. Gradient a řetězcové pravidlo
 
@@ -236,16 +256,29 @@ První pozorovací běh má 10 epoch a rychlost učení
 $\eta=0{,}01$. Stejně jako v experimentu 001 Runner
 vypíše počáteční nastavení, pro každou epochu ztrátu před
 aktualizací a váhy s biasem po ní. Po poslední epoše
-vypíše pro každou kombinaci AND vstupy, očekávaný a
-předpovězený výstup a nakonec MSE trénovací tabulky.
+vypíše pro každou kombinaci AND vstupy, cíl a přímo
+spojitý výstup `perceptron_forward` bez prahování.
+Nakonec vypíše MSE celé trénovací tabulky.
 Samostatné běhy oddělí prázdným řádkem. Deset epoch
 je počáteční pozorování, nikoli předpoklad dosažené přesnosti.
 
-## 7. Otevřené návrhové otázky
+## 7. Požadavky a ověření
 
-Před implementací společně určíme rozsah inicializace,
-konstruktor Optimizeru, klasifikační práh a měřitelné
-požadavky experimentu.
+- Konstruktor vrátí hodnotovou strukturu s váhami a biasem
+  v intervalu $[-1,1]$; test ověří rozsah a opakování při
+  stejném semínku v jednom C runtime.
+- `perceptron_forward` spočítá sigmoidální výstup ze
+  dvou vstupů; test ověří známé hodnoty a mezní průběh.
+- Dávková MSE funkce vrátí ztrátu a uloží gradienty do
+  Optimizeru; test porovná gradienty s numerickou derivací
+  a ověří krok `optimizer_update`.
+- Test s náhradní funkcí `backward` ověří, že jednotný
+  obal předá dávku vybranému callbacku a vrátí jeho ztrátu.
+  Aktualizace před prvním výpočtem gradientů model nezmění.
+- Runner během 10 epoch vypíše ztrátu a parametry, poté
+  spojité výstupy na čtyřech trénovacích kombinacích a MSE.
+  Výsledek je pozorováním prvního běhu, bez požadavku na
+  přesnou hodnotu MSE či klasifikační správnost.
 
 ## Slovník pojmů
 
@@ -267,8 +300,6 @@ požadavky experimentu.
   gradientu celé trénovací dávky.
 - **Lineární separovatelnost:** možnost oddělit kombinaci
   $(1,1)$ od ostatních kombinací AND afinní rozhodovací hranicí.
-- **Rozhodovací práh:** mez, která převede spojitý výstup
-  sigmoidy na jednu ze dvou tříd.
 - **Nasycení sigmoidy:** oblast výstupu blízko $0$ či $1$,
   kde je derivace aktivační funkce malá.
 - **BCE:** binární křížová entropie, alternativní ztráta pro
