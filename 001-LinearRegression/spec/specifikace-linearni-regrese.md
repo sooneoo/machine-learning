@@ -2,7 +2,7 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Revize:** 28
+- **Revize:** 29
 - **Stav závěru:** návrh k odsouhlasení vlastníkem
 
 ## 1. Cíl
@@ -13,7 +13,7 @@ SGD a BGD. Srovnává vliv rychlosti učení, geometrie bodů a počtu
 epoch. Slouží jako malý referenční krok pro pozdější modely neuronů.
 Výkon ani spotřeba paměti se zde neměřily.
 
-## 2. Data a podmínky
+## 2. Podmínky experimentu
 
 Všechna měření používají tři vstupy $x=(1;3;5)$ km. Základní sada
 je zjednodušený převod $y=0{,}625x$ v mílích; nejde o přesný fyzikální
@@ -42,7 +42,7 @@ přímku $0{,}625x+1$ bez odchylky prostředního trénovacího bodu.
 Body $2$ a $4$ km testují interpolaci, $6$ km jednoduchou
 extrapolaci.
 
-## 3. Teorie učení
+## 3. Teorie a matematika
 
 ### 3.1 Model a ztráta
 
@@ -115,7 +115,7 @@ $\eta$ se tak cyklické SGD může dále pohybovat kolem minima;
 BGD používá gradient společného cíle. Kdyby se $\eta$ postupně
 snižovalo nebo se měnilo pořadí bodů, výsledek SGD by se mohl změnit.
 
-## 4. Architektura a výpočet
+## 4. Architektura programu
 
 `Regression` uchovává pouze $a,b$ a nezná optimalizátor.
 `Optimizer` drží nevlastněný ukazatel na model a poslední gradienty
@@ -185,6 +185,14 @@ nulu. `optimizer_backward()` vrací ztrátu bodu a přepíše gradienty,
 Ani jedna z těchto funkcí model nemění. `optimizer_update()` upraví
 $a,b$; varianta `slope_only` pouze $a$.
 
+Model musí žít déle než optimalizátor; platné ukazatele, nenulový
+počet bodů a konečné vstupy jsou předpoklady volajícího. V horkých
+funkcích se znovu netestují. Dynamická alokace ani HAL nejsou
+potřeba. Případná optimalizace výpočtu nebo paralelizace vyžaduje
+samostatné měření a nemění cíl optimalizace parametrů modelu.
+
+## 5. Metodologie experimentu
+
 ```mermaid
 flowchart LR
     Data[Body a počáteční model] --> Step{Metoda}
@@ -200,15 +208,10 @@ flowchart LR
 
 Původní čtyři běhy používají deset epoch a seed 42 nastavený zvlášť
 před konstrukcí modelu. A–C používají 100 epoch, C1000 tisíc.
-Model musí žít déle než optimalizátor; ukazatele, nenulový počet bodů
-a konečné vstupy jsou předpoklady volajícího. V horkých funkcích
-se znovu netestují. Dynamická alokace ani HAL nejsou potřeba.
 Diagnostické přepočítání MSE po každém kroku slouží k pozorování,
-nikoli k měření rychlosti trénování. Výpočetní optimalizace
-(včetně případné paralelizace) je jiná úloha než optimalizace
-parametrů modelu a vyžaduje samostatný benchmark.
+nikoli k měření rychlosti trénování.
 
-## 5. Požadavky a ověření
+## 6. Požadavky a ověření
 
 | ID | Požadavek a rozhodující ověření |
 |---|---|
@@ -227,9 +230,9 @@ Každý projektový test se spouští cílem `make test`; příkazy pro
 překlad a spuštění jsou v `README.md`. Úplný výpis jednotlivých
 trénovacích kroků poskytuje program.
 
-## 6. Výsledky
+## 7. Průběh a výsledky experimentu
 
-### 6.1 Rychlost učení na přesné přímce
+### 7.1 Rychlost učení na přesné přímce
 
 Základní čtyři běhy mají kvůli rozdílné implementaci `rand()` různé
 počáteční parametry v Linuxu a Windows. V každé platformě ale
@@ -255,7 +258,7 @@ epochách nižší chybu, provedlo však 30 aktualizací oproti 10 u BGD.
 Při $\eta=0{,}1$ obě metody divergovaly. Nestabilitu tedy nelze
 připsat jen jednobodovým aktualizacím.
 
-### 6.2 Geometrie dat po 100 epochách
+### 7.2 Geometrie dat po 100 epochách
 
 Následující hodnoty jsou přímá měření MSE po aktualizaci. Počet
 růstů označuje kroky, při nichž MSE celé sady vzrostla; BGD
@@ -278,7 +281,7 @@ z $0{,}087208$ na $0{,}092715$. To dokládá, že zlepšení
 jednoho bodu nezaručuje zlepšení celé sady ani u přesné
 posunuté přímky. A při pevném $b=0$ odpovídá odvozené monotonii.
 
-### 6.3 Nekolineární body po 1000 epochách
+### 7.3 Nekolineární body po 1000 epochách
 
 Při stejných 1000 průchodech daty použilo SGD 3000 jednobodových
 aktualizací a BGD 1000 dávkových. Každá metoda zpracovala 3000
@@ -298,7 +301,28 @@ $1/72\approx0{,}0138889$ více než SGD. Validační MSE byla
 naopak nižší u SGD, protože validační cíle sledují přímku
 bez odchylky prostředního trénovacího bodu.
 
-### 6.4 Návrh závěru
+## 8. Omezení a další otázky
+
+Sady mají pouze tři syntetické body. C obsahuje jedinou
+odchylku od přímky, nikoli obecný model šumu. SGD používá
+pevné pořadí a konstantní $\eta$; při klesajícím $\eta$ nebo
+promíchání bodů by se trajektorie změnila. Srovnání po
+stejném počtu epoch neporovnává čas aktualizací ani paměť.
+Další experiment může použít více rozptýlených bodů,
+stanovit kritérium přesnosti a samostatně měřit výpočetní
+výkon.
+
+## 9. Vazba na zdrojový kód
+
+| Oblast | Soubor |
+|---|---|
+| Model | `include/regression/regression.h`, `src/regression.c` |
+| Optimalizátor | `include/regression/optimizer.h`, `src/optimizer.c` |
+| Řízení a výstup běhů | `src/main.c` |
+| Jednotkové testy | `tests/test_regression.c` |
+| Překlad a dokumentace API | `Makefile`, `config/`, `Doxyfile` |
+
+## 10. Závěr
 
 Na této trojici nekolineárních bodů s pevným pořadím a
 $\eta=0{,}01$ dosáhlo BGD po delším běhu nižší MSE celé
@@ -310,28 +334,7 @@ jako referenční model a kontrola výpočtu gradientů; přesnost
 na jiné úloze zatím není stanovena. **Závěr čeká na odsouhlasení
 vlastníkem.**
 
-## 7. Omezení a další otázky
-
-Sady mají pouze tři syntetické body. C obsahuje jedinou
-odchylku od přímky, nikoli obecný model šumu. SGD používá
-pevné pořadí a konstantní $\eta$; při klesajícím $\eta$ nebo
-promíchání bodů by se trajektorie změnila. Srovnání po
-stejném počtu epoch neporovnává čas aktualizací ani paměť.
-Další experiment může použít více rozptýlených bodů,
-stanovit kritérium přesnosti a samostatně měřit výpočetní
-výkon.
-
-## 8. Vazba na zdrojový kód
-
-| Oblast | Soubor |
-|---|---|
-| Model | `include/regression/regression.h`, `src/regression.c` |
-| Optimalizátor | `include/regression/optimizer.h`, `src/optimizer.c` |
-| Řízení a výstup běhů | `src/main.c` |
-| Jednotkové testy | `tests/test_regression.c` |
-| Překlad a dokumentace API | `Makefile`, `config/`, `Doxyfile` |
-
-## 9. Slovník
+## 11. Slovník
 
 - **Afinní model:** Přímka $\hat y=ax+b$ se sklonem $a$ a posunem $b$.
 - **Reziduum:** Rozdíl předpovědi a cíle, $\hat y_i-y_i$.
