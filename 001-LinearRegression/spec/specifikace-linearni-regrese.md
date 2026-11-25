@@ -5,7 +5,7 @@
 - **Stav dokumentu:** původní i navazující běhy SGD, BGD a validace ověřeny; závěr čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 24
+- **Revize:** 25
 
 ## 1. Účel dokumentu
 
@@ -815,25 +815,15 @@ validační sada jsou přesně uvedeny v oddílu 2.5. Žádné semínko
 generátoru se pro šest nových běhů nepoužilo, protože model byl
 inicializován pevně.
 
-Dne 2026-11-25 z adresáře projektu prošly příkazy
-`make PLATFORM=linux_x86_64 test build` ve WSL Arch a
-`mingw32-make PLATFORM=win32_x86_64 test build` v MSYS2 MinGW-w64.
-Poté se spustily výsledné binární soubory
-`.cache/linux_x86_64/release/linear_regression` a
-`.cache/win32_x86_64/release/linear_regression.exe`.
-Procesorem byl Intel Core i7-8565U; použity byly překladače a volby
-uvedené v úvodu oddílu 10. Síť ani modelové váhy se nepoužily,
-výkon a spotřeba paměti se neměřily. Vstupní body, parametry a
-validační sada jsou přesně uvedeny v oddílu 2.5. Žádné semínko
-generátoru se pro šest nových běhů nepoužilo, protože model byl
-inicializován pevně.
-
 Překlad a osm jednotkových testů prošly pro `linux_x86_64` i
 `win32_x86_64`. V každém systému následovalo šest běhů se shodnou
 pevnou inicializací. Všech šest nových běhů dalo na obou platformách
 stejné vypsané hodnoty v každém kroku. Původní čtyři běhy mají proti
 předchozímu záznamu beze změny celé výstupy. `LR-T18` a `LR-T19`
 jsou splněné, v A zůstalo $b=0$ po všech aktualizacích.
+Na žádost vlastníka jsou naměřené hodnoty níže zaznamenány jako
+výsledky tohoto experimentu. Interpretace na konci oddílu zůstává
+návrhem ke společnému odsouhlasení.
 
 | Případ | Metoda | Aktualizace | Růst MSE | Konečná trénovací MSE | Validační MSE | Konečné $a$ | Konečné $b$ |
 |---|---|---:|---:|---:|---:|---:|---:|
