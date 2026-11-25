@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 9
+- **Revize:** 10
 
 ## 1. Účel dokumentu
 
@@ -178,7 +178,16 @@ classDiagram
 
 ### 5.4 Vstupní předpoklady prototypu
 
-`regression_forward` očekává platný ukazatel na `Regression` a konečné hodnoty modelových parametrů i $x$. Samotná afinní funkce může přijmout také záporné konečné $x$; ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. `optimizer_backward` očekává platný `Optimizer` s živým modelem a platné konečné $x$ a $y$. První verze trénovací body považuje za správně dodané a neprovádí jejich průběžnou validaci. Případné chování při porušení těchto předpokladů ani pravidla pro neplatné $\mathrm{lr}$ zatím nejsou součástí odsouhlaseného rozhraní.
+`Runner` vytvoří `Regression` a `Optimizer` jako lokální hodnoty v `main`, typicky uložené na zásobníku:
+
+```c
+Regression model = regression();
+Optimizer training = optimizer(&model);
+```
+
+`Regression` vznikne dříve než `Optimizer` a oba objekty žijí po celý běh učení. Volání používají jejich adresy; `Regression *` uložený v optimalizátoru proto po tuto dobu míří na platný model. `regression_forward`, `optimizer_backward` a `optimizer_update` neprovádějí při každém průchodu opakované kontroly `NULL` u těchto ukazatelů. Platný ukazatel a správná životnost jsou jejich smluvní předpoklady. Porušení předpokladu znamená v C nedefinované chování, nikoli zaručený okamžitý pád.
+
+Pro první verzi se předpokládají také konečné hodnoty parametrů, $x$ a $y$; trénovací data se průběžně nevalidují. Samotná afinní funkce může přijmout i záporné konečné $x$, přestože ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. Pravidla pro neplatné $\mathrm{lr}$ a numerické přetečení zůstávají otevřená. Tento experiment dynamickou alokaci nepotřebuje; pro budoucí experimenty platí jednorázová kontrola výsledku `lib/alloc` bez opakovaného testování ukazatele v horké části algoritmu.
 
 Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
@@ -209,6 +218,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; vstupní smlouva $\mathrm{lr}$ se doplní. |
 | LR-016 | První prototyp musí použít učicí dvojice $(1;0{,}625)$, $(3;1{,}875)$ a $(5;3{,}125)$ ve vztahu kilometrů k mílím. | Potvrzená učicí sada. |
 | LR-017 | První verze musí považovat trénovací hodnoty $x$ a $y$ za platné vstupy a neprovádět jejich průběžnou validaci v modelu ani optimalizátoru. | Potvrzený vstupní předpoklad. |
+| LR-018 | `Runner` musí vytvořit model a optimalizátor jako lokální hodnoty v `main`, předávat jejich adresy a udržet model živý po celou dobu používání optimalizátoru; horké funkce nesmějí opakovat `NULL` kontroly těchto ukazatelů. | Potvrzený přístup k životnosti a výkonu. |
 
 Požadavky na konvergenci, přesnost parametrů, chování při porušení vstupních předpokladů a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
@@ -226,6 +236,7 @@ Požadavky na konvergenci, přesnost parametrů, chování při porušení vstup
 | LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Plánováno; kód neexistuje. |
 | LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Plánováno; kód neexistuje. |
 | LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Teoretický očekávaný výsledek; kód neexistuje. |
+| LR-T11 | LR-013, LR-018 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `main`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Plánováno; kód neexistuje. |
 
 Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
@@ -241,7 +252,7 @@ Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou 
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
 | LR-OP-07 | Jak prezentovat proložení bodů? | Číselný výstup, export bodů a přímky pro graf nebo vlastní vizualizace. |
 | LR-OP-08 | Jak zvolit semínko generátoru? | `Runner` volá `srand` před konstrukcí; konkrétní zdroj semínka a jeho výchozí hodnota se určí. |
-| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění a trénovací $x$, $y$ se považují za platné. Otevřené: porušení předpokladů, platnost $\mathrm{lr}$ a přetečení. |
+| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění; trénovací $x$, $y$ a ukazatele na živé lokální objekty se považují za platné bez opakovaných kontrol. Otevřené: platnost $\mathrm{lr}$ a přetečení. |
 
 Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Před implementací je třeba odsouhlasit otevřené detaily a akceptační kritéria.
 
@@ -285,4 +296,6 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
 - **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž bude prototyp upravovat parametry $a$ a $b$.
-- **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty bez průběžné kontroly.
+- **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty a ukazatele na živé objekty bez průběžné kontroly.
+- **Životnost objektu:** Doba, po kterou lze přistupovat k lokální struktuře; `Regression` musí zůstat živý, dokud na něj odkazuje `Optimizer`.
+- **Nedefinované chování:** Situace bez zaručeného výsledku podle pravidel C, například dereference neplatného ukazatele; program nemusí ihned skončit.
