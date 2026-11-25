@@ -31,7 +31,17 @@ This repository contains independent artificial intelligence research experiment
   ```
 
 - Keep `.c` source files and headers used by only one source file in `src/`. Put every header shared by multiple `.c` files, and every module's public interface, under `include/<logical-part>/`, for example `include/network/network.h`. Include shared headers by that logical path and avoid a flat `include/` layout.
-- Prefer automatic storage for data that fits on the stack. Write value-returning constructors that prepare local state and return an initialized C struct, for example `Network network(parameters) { return (Network) { /* fields */ }; }`. Make ownership and lifetime clear to the caller.
+- Prefer automatic storage for data that fits on the stack. Prefer designated initializers and compound literals for new structs, especially in value-returning constructors. Initialize members that need nonzero values explicitly; C zero-initializes omitted members. For example:
+
+  ```c
+  Optimizer optimizer(Regression *regression) {
+      return (Optimizer) {
+          .regression = regression
+      };
+  }
+  ```
+
+  This leaves `ga` and `gb` at zero without separate assignments. Use assignments when changing an existing object or when construction requires ordered steps. Make ownership and lifetime clear to the caller; verify any performance advantage by measurement.
 - Route dynamic allocations through `lib/alloc` and its `alloc_` API. Do not call `malloc`, `calloc`, `realloc`, or `free` in experiment code. Use the caller-backed stack allocator for bounded temporary data and the OS-backed arena for longer-lived or larger data. Check allocation failures, respect reset/finalize lifetimes, and keep platform memory acquisition inside the allocator HAL.
 - Keep platform-independent algorithms separate from operating system and accelerator code. Expose platform-specific operations through a small HAL interface in a header. Put each implementation in a file suffixed with its exact platform name, for example `src/hal_linux_x86_64.c` or `src/hal_win32_x86_64.c`. Do not scatter platform `#ifdef` branches through the algorithm.
 
