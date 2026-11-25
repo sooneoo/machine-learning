@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 9
+- **Revize:** 10
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -83,9 +83,13 @@ pro návaznost na první experiment; binární křížovou entropii
 (BCE) zatím nepoužijeme.
 
 K trénování použijeme všechny čtyři binární kombinace,
-tedy $N=4$. Samostatnou validační množinu pro tuto úlohu
-nevytváříme. Závěrečné vyhodnocení na stejných datech
-ukáže naučení pravdivostní tabulky, nikoli zobecnění na
+tedy $N=4$. Runner připraví konstantní pole
+`const float inputs[4][2]` a `const float targets[4]`; každá
+dvojice vstupů tvoří jeden řádek a má odpovídající cíl.
+Dávkové rozhraní předá obě pole a počet řádků bez kopírování.
+Samostatnou validační množinu pro tuto úlohu nevytváříme.
+Závěrečné vyhodnocení na stejných datech ukáže naučení
+pravdivostní tabulky, nikoli zobecnění na
 neviděné vstupy.
 
 ## 4. Architektura programu
@@ -94,13 +98,19 @@ Perceptron uchovává dvě váhy a bias, počítá sigmoidální
 výstup a nezná optimalizátor. Optimizer drží nevlastněný
 ukazatel na model, dva gradienty vah a gradient biasu;
 vypočtené gradienty použije při aktualizaci parametrů.
-Runner v souboru main.c vytváří oba objekty na zásobníku,
-řídí trénování a po něm vyhodnocuje celou tabulku AND.
+Runner v souboru main.c má samostatnou funkci
+`run_and_experiment`, kterou zavolá `main`.
+V této funkci vytvoří na zásobníku nejprve Perceptron,
+pak Optimizer, připraví konstantní trénovací pole,
+řídí trénování a nakonec vyhodnotí celou tabulku AND.
 
 ```mermaid
 classDiagram
     direction LR
-    class Runner
+    class Runner {
+        +main()
+        +run_and_experiment()
+    }
     class Optimizer {
         +model
         +backward
@@ -110,6 +120,8 @@ classDiagram
     class Perceptron {
         +w
         +b
+        +perceptron()
+        +perceptron_forward()
     }
     Runner ..> Perceptron : vytváří a vyhodnocuje
     Runner ..> Optimizer : volí funkci a řídí učení
@@ -127,16 +139,32 @@ Nepřímé volání proběhne jednou za dávku, nikoli pro každý vzorek.
 Pro tento běh mají struktury přímo pole `float w[2]`
 a `float gw[2]` a po jednom `float` pro bias a jeho
 gradient. Velikost je daná při překladu; jiný počet vstupů
-vyžaduje změnu velikosti polí a nový překlad. Konstrukce modelu ani optimalizátoru
-nevyžaduje dynamickou alokaci.
+vyžaduje změnu velikosti polí a nový překlad. Konstrukce modelu
+ani optimalizátoru nevyžaduje dynamickou alokaci.
+
+```c
+Perceptron perceptron(void);
+float perceptron_forward(Perceptron *self, const float x[2]);
+```
+
+Konstruktor vrací strukturu hodnotou a náhodně inicializuje
+obě váhy i bias pomocí `rand()` po vzoru experimentu 001.
+Runner před jeho voláním nastaví `srand(42)`.
+Stejné semínko nezaručuje stejnou posloupnost `rand()`
+v různých C runtime. Funkce `perceptron_forward`
+přijímá dvojici vstupů, vypočte
+$z=w_1x_1+w_2x_2+b$ a vrátí $\sigma(z)$.
 
 Jednotné volání `optimizer_backward` zajistí krátká
 `static inline` funkce v hlavičce. Vyhodnotí ukazatel
 na Optimizer pouze jednou a předá volání zvolené funkci
 `backward`. Konstruktor modelu, výpočet výstupu,
 konstruktor optimalizátoru a aktualizace gradientů navážou
-na rozhraní experimentu 001. Přesné podpisy, reprezentace
-vícerozměrných vstupů a vlastnictví paměti ještě určíme.
+na rozhraní experimentu 001. Dávka používá řádky po dvou
+hodnotách, samostatné pole cílů a počet vzorků, například
+`optimizer_backward(&training, inputs, targets, 4)`.
+Podpis konstruktoru Optimizeru a rozsah náhodné
+inicializace ještě určíme.
 
 ## 5. Gradient a řetězcové pravidlo
 
@@ -201,10 +229,11 @@ kroky, pokud to zlepší výkon či numerickou stabilitu.
 
 ## 6. Metodika a diagnostika
 
-Runner provede BGD: v každé epoše zavolá `backward`
-nad celou čtyřřádkovou trénovací dávkou, poté aktualizuje
-parametry. První pozorovací běh má 10 epoch a rychlost
-učení $\eta=0{,}01$. Stejně jako v experimentu 001 Runner
+`main` zavolá `run_and_experiment`. Funkce
+v každé epoše zavolá `optimizer_backward` nad celou
+čtyřřádkovou dávkou, poté aktualizuje parametry (BGD).
+První pozorovací běh má 10 epoch a rychlost učení
+$\eta=0{,}01$. Stejně jako v experimentu 001 Runner
 vypíše počáteční nastavení, pro každou epochu ztrátu před
 aktualizací a váhy s biasem po ní. Po poslední epoše
 vypíše pro každou kombinaci AND vstupy, očekávaný a
@@ -214,9 +243,9 @@ je počáteční pozorování, nikoli předpoklad dosažené přesnosti.
 
 ## 7. Otevřené návrhové otázky
 
-Před implementací společně určíme rozhraní dávky,
-inicializaci, klasifikační práh a měřitelné požadavky
-experimentu.
+Před implementací společně určíme rozsah inicializace,
+konstruktor Optimizeru, klasifikační práh a měřitelné
+požadavky experimentu.
 
 ## Slovník pojmů
 
