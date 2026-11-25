@@ -35,6 +35,7 @@ direktiv `#include`. Výstupy platforem se ukládají odděleně do
 
 Každý ze čtyř běhů nastavuje seed 42. SGD vypisuje ztrátu před
 každým z 30 kroků, BGD MSE před každým z 10 kroků. SGD prochází
-body v pevném pořadí. Specifikace obsahuje tabulky a grafy MSE
-po epochách.
+body v pevném pořadí. Model každého běhu se po tréninku ověří na
+třech dosud neviděných bodech; vypíší predikce a validační MSE.
+Specifikace obsahuje tabulky výsledků a grafy MSE po epochách.
 Závěr testování čeká na odsouhlasení vlastníkem.

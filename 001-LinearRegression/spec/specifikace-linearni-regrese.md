@@ -2,10 +2,10 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Stav dokumentu:** běhy SGD i BGD ověřeny; společný závěr testování čeká na odsouhlasení vlastníkem
+- **Stav dokumentu:** běhy SGD, BGD i validace ověřeny; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 20
+- **Revize:** 21
 
 ## 1. Účel dokumentu
 
@@ -43,6 +43,18 @@ První prototyp používá záměrně zjednodušený převod kilometrů na míle
 | 3 | $5$ | $3{,}125$ |
 
 Všechny tři dvojice jsou určeny k učení; hodnoty zadal vlastník repozitáře dne 2026-11-25. V obou funkcích Runneru jsou hodnoty uloženy ve dvou konstantních polích `x` a `y` stejné délky, odvozené z tabulky. Pro první verzi se předpokládá, že předaná trénovací data jsou platná. Nezavádí se průběžná kontrola jejich hodnot v dopředném výpočtu ani v kroku optimalizátoru.
+
+### 2.4 Oddělená validační sada
+
+Validační trojice je vybraná ze stejného zjednodušeného vztahu $y=0{,}625x$, ale její hodnoty $x$ se v trénovacích polích nevyskytují. Body $2$ a $4$ km leží mezi trénovacími vstupy, bod $6$ km leží za jejich rozsahem. Jde o kontrolu interpolace a jednoduché extrapolace, nikoli o nezávislé měření na reálných datech.
+
+| Bod | Vstup $x_{\mathrm{val}}$ [km] | Cíl $y_{\mathrm{val}}$ [míle] | Poloha |
+|---|---:|---:|---|
+| 1 | $2$ | $1{,}25$ | Interpolace. |
+| 2 | $4$ | $2{,}5$ | Interpolace. |
+| 3 | $6$ | $3{,}75$ | Extrapolace. |
+
+Validační pole `validation_x` a `validation_y` budou v obou funkcích Runneru deklarována hned za trénovacími poli. Optimalizátor se k nim během deseti epoch nedostane; vyhodnocení proběhne jednou až po poslední aktualizaci modelu. Výstupy validace nebudou měnit $a$, $b$, gradienty ani rychlost učení.
 
 ## 3. Terminologie a jednotky
 
@@ -147,6 +159,24 @@ $0<\eta<\frac{2}{24{,}905}\approx0{,}0803$.
 Hodnota $0{,}1$ je za touto mezí, $0{,}01$ pod ní. Jde o
 teoretické očekávání pro gradient průměrné MSE, nikoli o naměřený
 výsledek dávkového běhu.
+
+### 4.3 Metrika výsledného modelu na neviděných bodech
+
+Po dokončení učení se pro pevné parametry $a$ a $b$ vypočte
+střední čtvercová chyba na validační množině:
+
+$$
+\operatorname{MSE}_{\mathrm{val}}(a,b)
+=\frac{1}{N_{\mathrm{val}}}\sum_{i=1}^{N_{\mathrm{val}}}
+(ax_{\mathrm{val},i}+b-y_{\mathrm{val},i})^2,\qquad
+N_{\mathrm{val}}=3.
+$$
+
+Tato hodnota posuzuje hotový model na vstupech nepoužitých k
+aktualizaci parametrů. Ztráta z trénovací sady ji nenahrazuje.
+Protože validační cíle pocházejí ze stejné přesné přímky bez
+šumu, nízká validační MSE neprokazuje chování na jiném vztahu
+ani odolnost vůči chybám měření.
 
 ## 5. Požadavky na architekturu řešení
 
@@ -314,6 +344,13 @@ označen metodou, `lr` a číslem epochy; SGD výstup nadále
 obsahuje jednotlivé body. Po každém samostatném běhu runner
 vypíše prázdný řádek, který oddělí následující experiment.
 
+Po trénovací smyčce každá funkce Runneru zavolá `regression_forward`
+na třech validačních vstupech, vypíše cíl a predikci každého
+bodu a spočítá `validation_mse` podle oddílu 4.3. Pro validaci
+nevzniká dynamická alokace a nevolá se `optimizer_backward`,
+`optimizer_backward_batch` ani `optimizer_update`. Výpis
+validačních výsledků předchází oddělovacímu prázdnému řádku.
+
 ```mermaid
 flowchart TD
     Main[main: čtyři běhy] --> Seed[Každý běh zvlášť: srand 42]
@@ -325,7 +362,9 @@ flowchart TD
     Update --> Report[Výpis MSE před a parametrů po kroku]
     Report --> More{Další epocha?}
     More -->|ano| Batch
-    More -->|ne| End[Konec běhu]
+    More -->|ne| Validation[Predikce na třech neviděných bodech]
+    Validation --> ValMSE[Výpis validační MSE]
+    ValMSE --> End[Konec běhu]
 ```
 
 Pro společný graf se po každé epoše vyhodnotí MSE všech bodů
@@ -370,6 +409,9 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-025 | Po dávkovém zpětném průchodu se musí použít stávající `optimizer_update`; původní SGD rozhraní a chování zůstává dostupné. | Implementováno a ověřeno na obou platformách. |
 | LR-026 | `main` musí spustit SGD a BGD pro `lr = 0.01f` i `lr = 0.1f`; každý běh zvlášť nastaví seed 42 a provede deset epoch na stejných třech bodech. | Implementováno a ověřeno na obou platformách. |
 | LR-027 | Dávkový běh musí po každé epoše vypsat MSE před aktualizací a parametry po ní, s označením metody a `lr`; po každém experimentu runner vypíše prázdný oddělovací řádek. | Implementováno a ověřeno na obou platformách. |
+| LR-028 | Každý běh musí mít oddělená konstantní validační pole s body $(2;1{,}25)$, $(4;2{,}5)$ a $(6;3{,}75)$, která se během učení nesmějí předat optimalizátoru. | Implementováno a ověřeno na obou platformách. |
+| LR-029 | Po desáté epoše musí každý ze čtyř běhů vypsat pro každý validační bod $x$, cíl a predikci podle finálního modelu a jednou spočítat validační MSE jako průměr tří čtvercových reziduí. | Implementováno a ověřeno na obou platformách. |
+| LR-030 | Validace nesmí změnit parametry modelu a musí proběhnout před prázdným řádkem oddělujícím experimenty. | Implementováno a ověřeno na obou platformách. |
 
 Kritéria konvergence a přesnosti parametrů se stanoví až z pozorovaných
 výsledků prvního běhu; identifikátory požadavků zůstanou stabilní.
@@ -395,8 +437,9 @@ Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodso
 | LR-T14 | LR-023, LR-025 | Jednobodová dávka a referenční přímka $(0{,}625;0)$ | Pro jeden bod stejná ztráta a gradienty jako u SGD funkce; pro referenční přímku nulová MSE a gradienty. | Splněno na obou platformách. |
 | LR-T15 | LR-025 | Gradienty z LR-T13 a `lr = 0.01f` | Stávající `optimizer_update` nastaví $a=7/48$ a $b=0{,}0375$. | Splněno na obou platformách. |
 | LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 kroků SGD a 10 kroků BGD pro každé `lr`, s prázdným řádkem po každém běhu. | Splněno na obou platformách. |
+| LR-T17 | LR-028 až LR-030 | Čtyři běhy na obou platformách | Každý běh vypíše tři dosud neviděné body, jejich predikce a jednu validační MSE po trénování; MSE odpovídá vypsanému finálnímu modelu s tolerancí zaokrouhlení. | Splněno integrační kontrolou na obou platformách. |
 
-Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_bgd_gradient_and_update`, LR-T14 `test_bgd_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12 a LR-T16 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
+Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_bgd_gradient_and_update`, LR-T14 `test_bgd_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12, LR-T16 a LR-T17 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -620,6 +663,55 @@ ani srovnání s frameworkem. Dalším možným krokem je porovnat
 metody po stejném počtu aktualizací a stanovit toleranci pro $a$, $b$
 a MSE před závěrem o přesnosti.
 
+### 10.3 Validace hotového modelu
+
+Na obou platformách proběhlo po dokončení deseti epoch v každém
+ze čtyř běhů jednorázové vyhodnocení bodů z oddílu 2.4. Každá varianta
+vypsala tři predikce a jednu validační MSE. Kontrola zdrojového
+kódu a výstupu potvrdila, že body $2$, $4$ a $6$ km se v trénovací
+smyčce nevyskytují a validace probíhá až po jejím dokončení.
+Původních 30 kroků SGD a 10 kroků BGD zůstalo v příslušných
+bězích numericky beze změny. Příkazy k reprodukci jsou v
+oddílu 10.2.
+
+Tabulka uvádí skutečně vypsané predikce v mílích a validační MSE
+v mílích na druhou. Cíle jsou pro $x=2,4,6$ postupně
+$1{,}25$, $2{,}5$ a $3{,}75$. Čísla jsou zaokrouhlená
+výpisem na devět platných číslic.
+
+| Platforma | Metoda | $\eta$ | $\hat y(2)$ | $\hat y(4)$ | $\hat y(6)$ | $\operatorname{MSE}_{\mathrm{val}}$ |
+|---|---|---:|---:|---:|---:|---:|
+| Linux | SGD | 0,01 | 1,28730106 | 2,50464582 | 3,72199035 | 0,000732497952 |
+| Linux | BGD | 0,01 | 1,08021224 | 2,1224339 | 3,16465569 | 0,171337351 |
+| Linux | SGD | 0,1 | -74137,9219 | -148110,781 | -222083,641 | 2,55856558e+10 |
+| Linux | BGD | 0,1 | -187,409378 | -353,009399 | -518,609436 | 144946,219 |
+| Windows | SGD | 0,01 | 1,01482463 | 2,46829677 | 3,92176867 | 0,0286056753 |
+| Windows | BGD | 0,01 | 0,788371801 | 2,09837604 | 3,40838027 | 0,163702145 |
+| Windows | SGD | 0,1 | -84898,1562 | -169607,031 | -254315,875 | 3,35512596e+10 |
+| Windows | BGD | 0,1 | -213,101746 | -401,064453 | -589,027222 | 186731,922 |
+
+Validační MSE byla ověřena proti průměru čtvercových rozdílů z
+vypsaných predikcí a proti parametrům modelu po posledním trénovacím
+kroku, s tolerancí na zaokrouhlení výpisu. Sedm existujících
+jednotkových testů prošlo na obou platformách. Integrační kontrola
+LR-T17 prošla pro všechny čtyři varianty na Linuxu i Windows.
+
+Při $\eta=0{,}01$ má SGD po deseti epochách nižší validační MSE
+než BGD na obou platformách. To je v souladu s trénovací MSE v oddílu
+10.2, ale SGD provedlo 30 aktualizací a BGD jen 10. Při
+$\eta=0{,}1$ je validační chyba obou metod vysoká; dávkování
+samo nestabilní krok neopravilo. Rozdíl absolutních hodnot mezi
+Linuxem a Windows ovlivňují také rozdílné počáteční parametry z
+platformních implementací `rand()`.
+
+**Doplňující navržený závěr k odsouhlasení:** Pro tato přesná syntetická
+data a deset epoch dosáhlo SGD při $\eta=0{,}01$ lepšího výsledku
+na neviděných vstupech stejného vztahu. Výsledek neprokazuje obecnou
+převahu SGD ani schopnost modelu pracovat se šumem nebo jiným vztahem.
+Body $2$ a $4$ km ověřují interpolaci, $6$ km jedinou jednoduchou
+extrapolaci. Kritérium dostatečné přesnosti stále nebylo stanoveno.
+Závěr zatím **není odsouhlasen vlastníkem**.
+
 ## 11. Vazba na implementaci a údržba
 
 | Oblast | Zdrojový soubor |
@@ -658,7 +750,10 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Mini dávka:** Podmnožina bodů se společnou aktualizací gradientu; tento experiment používá buď jednotlivé body, nebo celou trojici.
 - **Dávkový gradient:** Zde průměr gradientů čtvercové ztráty všech tří bodů, vypočtený před jedinou aktualizací parametrů.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
-- **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž bude prototyp upravovat parametry $a$ a $b$.
+- **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž prototyp upravuje parametry $a$ a $b$.
+- **Validační sada:** Tři další body ze stejného zjednodušeného vztahu, které optimalizátor nevidí; po tréninku ověřují predikce na dvou vnitřních a jednom vnějším vstupu.
+- **Interpolace:** Predikce pro vstup ležící mezi krajními trénovacími hodnotami; zde $2$ a $4$ km.
+- **Extrapolace:** Predikce za rozsahem trénovacích vstupů; zde $6$ km.
 - **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty a ukazatele na živé objekty bez průběžné kontroly.
 - **Životnost objektu:** Doba, po kterou lze přistupovat k lokální struktuře; `Regression` musí zůstat živý, dokud na něj odkazuje `Optimizer`.
 - **Nedefinované chování:** Situace bez zaručeného výsledku podle pravidel C, například dereference neplatného ukazatele; program nemusí ihned skončit.
