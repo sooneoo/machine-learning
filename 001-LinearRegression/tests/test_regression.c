@@ -178,6 +178,26 @@ static bool test_slope_only_update(char *error, size_t error_size) {
 }
 
 
+static bool test_scattered_batch_optimum(char *error, size_t error_size) {
+    Regression model = {.a = 5.0f / 8.0f, .b = 13.0f / 12.0f};
+    Optimizer training = optimizer(&model);
+    const float x[] = {1.0f, 3.0f, 5.0f};
+    const float y[] = {1.625f, 3.125f, 4.125f};
+    float mse = optimizer_backward_batch(&training, x, y, 3);
+
+    TEST_ASSERT(close_float(mse, 1.0f / 72.0f),
+            "noncollinear batch has positive minimum MSE");
+    TEST_ASSERT(close_float(training.ga, 0.0f),
+            "slope gradient vanishes at batch optimum");
+    TEST_ASSERT(close_float(training.gb, 0.0f),
+            "intercept gradient vanishes at batch optimum");
+    TEST_ASSERT(close_float(model.a, 5.0f / 8.0f)
+            && close_float(model.b, 13.0f / 12.0f),
+            "backward must not modify the optimum model");
+    return true;
+}
+
+
 static const TestCase tests[] = {
     {"forward", test_forward},
     {"seeded constructor", test_constructor},
@@ -186,7 +206,8 @@ static const TestCase tests[] = {
     {"squared loss and reference", test_squared_loss_and_reference},
     {"BGD gradient and update", test_bgd_gradient_and_update},
     {"BGD single and reference", test_bgd_single_and_reference},
-    {"slope-only update", test_slope_only_update}
+    {"slope-only update", test_slope_only_update},
+    {"noncollinear batch optimum", test_scattered_batch_optimum}
 };
 
 

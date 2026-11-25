@@ -133,14 +133,15 @@ static float comparison_mse(Regression *model, const float *x,
  * @param[in] validation_y Held-out targets.
  * @param[in] count Number of samples in each set.
  * @param[in] slope_only Keep the intercept fixed at zero when true.
+ * @param[in] epochs Number of full passes through the training set.
  */
 static void run_comparison_sgd(const char *name, const float *x,
         const float *y, const float *validation_x,
-        const float *validation_y, size_t count, bool slope_only) {
+        const float *validation_y, size_t count, bool slope_only,
+        size_t epochs) {
     Regression model = {.a = -0.5f};
     Optimizer training = optimizer(&model);
     const float lr = 0.01f;
-    const size_t epochs = 100;
     size_t mse_increases = 0;
     float previous_mse = comparison_mse(&model, x, y, count);
 
@@ -190,14 +191,15 @@ static void run_comparison_sgd(const char *name, const float *x,
  * @param[in] validation_y Held-out targets.
  * @param[in] count Number of samples in each set.
  * @param[in] slope_only Keep the intercept fixed at zero when true.
+ * @param[in] epochs Number of full passes through the training set.
  */
 static void run_comparison_bgd(const char *name, const float *x,
         const float *y, const float *validation_x,
-        const float *validation_y, size_t count, bool slope_only) {
+        const float *validation_y, size_t count, bool slope_only,
+        size_t epochs) {
     Regression model = {.a = -0.5f};
     Optimizer training = optimizer(&model);
     const float lr = 0.01f;
-    const size_t epochs = 100;
     size_t mse_increases = 0;
     float previous_mse = comparison_mse(&model, x, y, count);
 
@@ -245,20 +247,22 @@ static void run_comparison_bgd(const char *name, const float *x,
  * @param[in] validation_y Held-out targets.
  * @param[in] count Number of samples in each set.
  * @param[in] slope_only Keep the intercept fixed at zero when true.
+ * @param[in] epochs Number of full passes through the training set.
  */
 static void run_comparison_pair(const char *name, const float *x,
         const float *y, const float *validation_x,
-        const float *validation_y, size_t count, bool slope_only) {
+        const float *validation_y, size_t count, bool slope_only,
+        size_t epochs) {
     run_comparison_sgd(name, x, y, validation_x, validation_y, count,
-            slope_only);
+            slope_only, epochs);
     run_comparison_bgd(name, x, y, validation_x, validation_y, count,
-            slope_only);
+            slope_only, epochs);
 }
 
 
 /**
- * @brief Run the original four trials and three paired geometry trials.
- * @return Zero after all ten experiment runs.
+ * @brief Run four original trials, three geometry pairs, and a long C pair.
+ * @return Zero after all twelve experiment runs.
  */
 int main(void) {
     run_sgd_experiment(0.01f);
@@ -276,10 +280,12 @@ int main(void) {
     size_t count = sizeof(x) / sizeof(x[0]);
 
     run_comparison_pair("A", x, origin_y, validation_x,
-            origin_validation_y, count, true);
+            origin_validation_y, count, true, 100);
     run_comparison_pair("B", x, shifted_y, validation_x,
-            shifted_validation_y, count, false);
+            shifted_validation_y, count, false, 100);
     run_comparison_pair("C", x, scattered_y, validation_x,
-            shifted_validation_y, count, false);
+            shifted_validation_y, count, false, 100);
+    run_comparison_pair("C1000", x, scattered_y, validation_x,
+            shifted_validation_y, count, false, 1000);
     return 0;
 }

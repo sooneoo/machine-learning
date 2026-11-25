@@ -14,7 +14,8 @@ množině). `src/main.c` porovnává oba postupy při
 zjednodušeného převodu kilometrů na míle. Navazující srovnání přidává
 tři geometrie bodů, pevnou počáteční hodnotu a 100 epoch: přímku přes
 počátek s učením jen sklonu, posunutou přímku s učením obou parametrů
-a body mimo přímku.
+a body mimo přímku. Dlouhý běh případu C porovnává stejné metody
+po 1000 epochách, aby ověřil chování při nekolineárních datech.
 
 Architektura, rovnice, akceptační scénáře, výsledky obou metod a
 navržený závěr jsou v
@@ -61,5 +62,5 @@ body v pevném pořadí. Model každého běhu se po tréninku ověří na
 třech dosud neviděných bodech; vypíší predikce a validační MSE.
 Dalších šest běhů vypisuje MSE celé sady po každé aktualizaci,
 počet zvýšení MSE a konečnou validační MSE. Specifikace obsahuje
-tabulky výsledků a grafy MSE po epochách.
+tabulky výsledků a grafy MSE po epochách včetně dlouhého běhu C.
 Závěr testování čeká na odsouhlasení vlastníkem.
