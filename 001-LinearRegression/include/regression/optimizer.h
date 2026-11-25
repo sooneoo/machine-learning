@@ -59,4 +59,12 @@ float optimizer_backward_batch(Optimizer *self, const float *x,
  */
 void optimizer_update(Optimizer *self, float lr);
 
+/**
+ * @brief Apply the stored slope gradient while keeping the intercept fixed.
+ * @param[in,out] self Optimizer whose borrowed model is updated.
+ * @param[in] lr Finite learning rate for this update.
+ * @pre self and its model are valid; no pointer checks run here.
+ */
+void optimizer_update_slope_only(Optimizer *self, float lr);
+
 #endif

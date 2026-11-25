@@ -47,3 +47,8 @@ void optimizer_update(Optimizer *self, float lr) {
     self->regression->a -= lr * self->ga;
     self->regression->b -= lr * self->gb;
 }
+
+
+void optimizer_update_slope_only(Optimizer *self, float lr) {
+    self->regression->a -= lr * self->ga;
+}

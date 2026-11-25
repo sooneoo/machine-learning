@@ -6,6 +6,7 @@
 #include "regression/optimizer.h"
 #include "regression/regression.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -103,13 +104,182 @@ static void run_bgd_experiment(float lr) {
 
 
 /**
- * @brief Compare SGD and BGD at two learning rates with seed 42.
- * @return Zero after all four experiment runs.
+ * @brief Compute the full-set MSE without modifying model or gradients.
+ * @param[in] model Current regression model.
+ * @param[in] x Inputs for the measured set.
+ * @param[in] y Targets for the measured set.
+ * @param[in] count Positive number of samples.
+ * @return Mean squared error for the current model.
+ */
+static float comparison_mse(Regression *model, const float *x,
+        const float *y, size_t count) {
+    float sum = 0.0f;
+
+    for (size_t index = 0; index < count; index++) {
+        float residual = regression_forward(model, x[index]) - y[index];
+        sum += residual * residual;
+    }
+
+    return sum / (float)count;
+}
+
+
+/**
+ * @brief Run one fixed-initialization, per-sample training comparison.
+ * @param[in] name Case label used in machine-readable diagnostics.
+ * @param[in] x Training inputs.
+ * @param[in] y Training targets.
+ * @param[in] validation_x Held-out inputs.
+ * @param[in] validation_y Held-out targets.
+ * @param[in] count Number of samples in each set.
+ * @param[in] slope_only Keep the intercept fixed at zero when true.
+ */
+static void run_comparison_sgd(const char *name, const float *x,
+        const float *y, const float *validation_x,
+        const float *validation_y, size_t count, bool slope_only) {
+    Regression model = {.a = -0.5f};
+    Optimizer training = optimizer(&model);
+    const float lr = 0.01f;
+    const size_t epochs = 100;
+    size_t mse_increases = 0;
+    float previous_mse = comparison_mse(&model, x, y, count);
+
+    printf("comparison case=%s method=SGD lr=%.9g epochs=%zu"
+            " initial_a=%.9g initial_b=%.9g initial_mse=%.9g\n",
+            name, lr, epochs, model.a, model.b, previous_mse);
+
+    for (size_t epoch = 0; epoch < epochs; epoch++) {
+        for (size_t sample = 0; sample < count; sample++) {
+            optimizer_backward(&training, x[sample], y[sample]);
+
+            if (slope_only) {
+                optimizer_update_slope_only(&training, lr);
+            } else {
+                optimizer_update(&training, lr);
+            }
+
+            float mse = comparison_mse(&model, x, y, count);
+
+            if (mse > previous_mse) {
+                mse_increases++;
+            }
+
+            printf("comparison_step case=%s method=SGD epoch=%zu"
+                    " sample=%zu mse_after=%.9g a=%.9g b=%.9g\n",
+                    name, epoch + 1, sample + 1, mse, model.a, model.b);
+            previous_mse = mse;
+        }
+    }
+
+    float validation_mse = comparison_mse(&model, validation_x,
+            validation_y, count);
+
+    printf("comparison_summary case=%s method=SGD updates=%zu"
+            " mse_increases=%zu final_mse=%.9g validation_mse=%.9g"
+            " a=%.9g b=%.9g\n\n", name, epochs * count, mse_increases,
+            previous_mse, validation_mse, model.a, model.b);
+}
+
+
+/**
+ * @brief Run one fixed-initialization, full-batch training comparison.
+ * @param[in] name Case label used in machine-readable diagnostics.
+ * @param[in] x Training inputs.
+ * @param[in] y Training targets.
+ * @param[in] validation_x Held-out inputs.
+ * @param[in] validation_y Held-out targets.
+ * @param[in] count Number of samples in each set.
+ * @param[in] slope_only Keep the intercept fixed at zero when true.
+ */
+static void run_comparison_bgd(const char *name, const float *x,
+        const float *y, const float *validation_x,
+        const float *validation_y, size_t count, bool slope_only) {
+    Regression model = {.a = -0.5f};
+    Optimizer training = optimizer(&model);
+    const float lr = 0.01f;
+    const size_t epochs = 100;
+    size_t mse_increases = 0;
+    float previous_mse = comparison_mse(&model, x, y, count);
+
+    printf("comparison case=%s method=BGD lr=%.9g epochs=%zu"
+            " initial_a=%.9g initial_b=%.9g initial_mse=%.9g\n",
+            name, lr, epochs, model.a, model.b, previous_mse);
+
+    for (size_t epoch = 0; epoch < epochs; epoch++) {
+        optimizer_backward_batch(&training, x, y, count);
+
+        if (slope_only) {
+            optimizer_update_slope_only(&training, lr);
+        } else {
+            optimizer_update(&training, lr);
+        }
+
+        float mse = comparison_mse(&model, x, y, count);
+
+        if (mse > previous_mse) {
+            mse_increases++;
+        }
+
+        printf("comparison_step case=%s method=BGD epoch=%zu"
+                " mse_after=%.9g a=%.9g b=%.9g\n",
+                name, epoch + 1, mse, model.a, model.b);
+        previous_mse = mse;
+    }
+
+    float validation_mse = comparison_mse(&model, validation_x,
+            validation_y, count);
+
+    printf("comparison_summary case=%s method=BGD updates=%zu"
+            " mse_increases=%zu final_mse=%.9g validation_mse=%.9g"
+            " a=%.9g b=%.9g\n\n", name, epochs, mse_increases,
+            previous_mse, validation_mse, model.a, model.b);
+}
+
+
+/**
+ * @brief Run SGD and BGD against the same training and validation sets.
+ * @param[in] name Case label used in machine-readable diagnostics.
+ * @param[in] x Training inputs.
+ * @param[in] y Training targets.
+ * @param[in] validation_x Held-out inputs.
+ * @param[in] validation_y Held-out targets.
+ * @param[in] count Number of samples in each set.
+ * @param[in] slope_only Keep the intercept fixed at zero when true.
+ */
+static void run_comparison_pair(const char *name, const float *x,
+        const float *y, const float *validation_x,
+        const float *validation_y, size_t count, bool slope_only) {
+    run_comparison_sgd(name, x, y, validation_x, validation_y, count,
+            slope_only);
+    run_comparison_bgd(name, x, y, validation_x, validation_y, count,
+            slope_only);
+}
+
+
+/**
+ * @brief Run the original four trials and three paired geometry trials.
+ * @return Zero after all ten experiment runs.
  */
 int main(void) {
     run_sgd_experiment(0.01f);
     run_bgd_experiment(0.01f);
     run_sgd_experiment(0.1f);
     run_bgd_experiment(0.1f);
+
+    const float x[] = {1.0f, 3.0f, 5.0f};
+    const float origin_y[] = {0.625f, 1.875f, 3.125f};
+    const float shifted_y[] = {1.625f, 2.875f, 4.125f};
+    const float scattered_y[] = {1.625f, 3.125f, 4.125f};
+    const float validation_x[] = {2.0f, 4.0f, 6.0f};
+    const float origin_validation_y[] = {1.25f, 2.5f, 3.75f};
+    const float shifted_validation_y[] = {2.25f, 3.5f, 4.75f};
+    size_t count = sizeof(x) / sizeof(x[0]);
+
+    run_comparison_pair("A", x, origin_y, validation_x,
+            origin_validation_y, count, true);
+    run_comparison_pair("B", x, shifted_y, validation_x,
+            shifted_validation_y, count, false);
+    run_comparison_pair("C", x, scattered_y, validation_x,
+            shifted_validation_y, count, false);
     return 0;
 }

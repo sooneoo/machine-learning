@@ -154,6 +154,30 @@ static bool test_bgd_single_and_reference(char *error, size_t error_size) {
 }
 
 
+static bool test_slope_only_update(char *error, size_t error_size) {
+    Regression model = {0};
+    Optimizer training = optimizer(&model);
+    const float x[] = {1.0f, 3.0f, 5.0f};
+    const float y[] = {0.625f, 1.875f, 3.125f};
+
+    optimizer_update_slope_only(&training, 0.01f);
+    TEST_ASSERT(model.a == 0.0f && model.b == 0.0f,
+            "slope-only update before backward must be inert");
+    optimizer_backward(&training, 2.0f, 1.0f);
+    optimizer_update_slope_only(&training, 0.1f);
+    TEST_ASSERT(close_float(model.a, 0.4f), "sample slope-only update");
+    TEST_ASSERT(model.b == 0.0f, "sample update must preserve intercept");
+
+    model = (Regression) {0};
+    optimizer_backward_batch(&training, x, y, 3);
+    optimizer_update_slope_only(&training, 0.01f);
+    TEST_ASSERT(close_float(model.a, 7.0f / 48.0f),
+            "batch slope-only update");
+    TEST_ASSERT(model.b == 0.0f, "batch update must preserve intercept");
+    return true;
+}
+
+
 static const TestCase tests[] = {
     {"forward", test_forward},
     {"seeded constructor", test_constructor},
@@ -161,7 +185,8 @@ static const TestCase tests[] = {
     {"backward and update", test_backward_and_update},
     {"squared loss and reference", test_squared_loss_and_reference},
     {"BGD gradient and update", test_bgd_gradient_and_update},
-    {"BGD single and reference", test_bgd_single_and_reference}
+    {"BGD single and reference", test_bgd_single_and_reference},
+    {"slope-only update", test_slope_only_update}
 };
 
 

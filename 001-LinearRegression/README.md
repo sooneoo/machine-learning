@@ -11,7 +11,10 @@ dílčí výzkumnou otázkou. Výkon se zde zatím neměří.
 (aktualizaci po každém bodu) a BGD (aktualizaci po celé trénovací
 množině). `src/main.c` porovnává oba postupy při
 `lr = 0.01f` a `lr = 0.1f` během deseti epoch nad třemi body
-zjednodušeného převodu kilometrů na míle.
+zjednodušeného převodu kilometrů na míle. Navazující srovnání přidává
+tři geometrie bodů, pevnou počáteční hodnotu a 100 epoch: přímku přes
+počátek s učením jen sklonu, posunutou přímku s učením obou parametrů
+a body mimo přímku.
 
 Architektura, rovnice, akceptační scénáře, výsledky obou metod a
 navržený závěr jsou v
@@ -52,9 +55,11 @@ nelinkuje. Cesty k hlavičkám jsou v platformních konfiguracích přes
 direktiv `#include`. Výstupy platforem se ukládají odděleně do
 `.cache/<platform>/`.
 
-Každý ze čtyř běhů nastavuje seed 42. SGD vypisuje ztrátu před
+Každý ze čtyř původních běhů nastavuje seed 42. SGD vypisuje ztrátu před
 každým z 30 kroků, BGD MSE před každým z 10 kroků. SGD prochází
 body v pevném pořadí. Model každého běhu se po tréninku ověří na
 třech dosud neviděných bodech; vypíší predikce a validační MSE.
-Specifikace obsahuje tabulky výsledků a grafy MSE po epochách.
+Dalších šest běhů vypisuje MSE celé sady po každé aktualizaci,
+počet zvýšení MSE a konečnou validační MSE. Specifikace obsahuje
+tabulky výsledků a grafy MSE po epochách.
 Závěr testování čeká na odsouhlasení vlastníkem.

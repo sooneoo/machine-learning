@@ -2,10 +2,10 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Stav dokumentu:** běhy SGD, BGD i validace ověřeny; závěr testování čeká na odsouhlasení vlastníkem
+- **Stav dokumentu:** původní i navazující běhy SGD, BGD a validace ověřeny; závěr čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 23
+- **Revize:** 24
 
 ## 1. Účel dokumentu
 
@@ -13,7 +13,7 @@ Cílem celé řady experimentů je vytvářet vlastní postupy a mechanismy pro 
 
 Primárním cílem první fáze je vytvořit model lineární regrese $\hat y=ax+b$ a ověřit mechanismy optimalizace jeho parametrů $a$ a $b$ v oddělených modulech. Sekundárně fáze porovnává jednobodové kroky SGD s dávkovými kroky BGD a zkoumá vliv rychlosti učení $\eta$ na průběh optimalizace. Převod kilometrů na míle poskytuje kontrolovatelný syntetický vztah; oddělené validační body ověřují výsledek mimo trénovací vstupy.
 
-Dokument odděluje potvrzené návrhové volby vlastníka, naměřené výsledky a dosud neodsouhlasený výklad. Běhy používají pevné pořadí tří trénovacích vzorků, seed 42, deset epoch a rychlosti učení $\eta=0{,}01$ a $0{,}1$. Výsledky, omezení a navržený závěr jsou v oddílu 10.
+Dokument odděluje potvrzené návrhové volby vlastníka, naměřené výsledky a dosud neodsouhlasený výklad. Původní čtyři běhy používají seed 42, deset epoch a rychlosti učení $\eta=0{,}01$ a $0{,}1$. Šest navazujících běhů používá pevný počáteční model bez generátoru náhodných čísel, 100 epoch a $\eta=0{,}01$. Všechny běhy procházejí třemi trénovacími body v pevném pořadí. Výsledky, omezení a navržený závěr jsou v oddílu 10.
 
 ## 2. Rozsah a hranice
 
@@ -57,6 +57,34 @@ Validační trojice je vybraná ze stejného zjednodušeného vztahu $y=0{,}625x
 | 3 | $6$ | $3{,}75$ | Extrapolace. |
 
 Validační pole `validation_x` a `validation_y` budou v obou funkcích Runneru deklarována hned za trénovacími poli. Optimalizátor se k nim během deseti epoch nedostane; vyhodnocení proběhne jednou až po poslední aktualizaci modelu. Výstupy validace nebudou měnit $a$, $b$, gradienty ani rychlost učení.
+
+### 2.5 Navazující srovnání geometrie dat a počtu parametrů
+
+Následující měření ověří hypotézu, že změna jednoho bodu v SGD může
+zhoršit MSE celé sady, přestože se zlepší chyba právě použitého bodu.
+Všechny případy používají vstupy $x=(1,3,5)$ km, počáteční
+$(a,b)=(-0{,}5;0)$ na obou platformách, $\eta=0{,}01$, pevné pořadí
+bodů a 100 epoch. SGD aktualizuje po každém bodu, BGD jednou za epochu.
+
+| Případ | Učené parametry | Trénovací cíle $y$ [míle] | Geometrie |
+|---|---|---|---|
+| A | Pouze $a$; $b=0$ pevně. | $(0{,}625;1{,}875;3{,}125)$ | Přesná přímka počátkem. |
+| B | $a$ a $b$. | $(1{,}625;2{,}875;4{,}125)$ | Přesná přímka s posunem $1$. |
+| C | $a$ a $b$. | $(1{,}625;3{,}125;4{,}125)$ | Prostřední bod posunutý o $0{,}25$ míle; body neleží na přímce. |
+
+Případ A používá stejný typ `Regression`, ale aktualizuje jen $a$;
+$b$ zůstává po celou dobu nulové. Případy B a C používají současný
+dvouparametrový postup. C se od B liší jen prostředním cílem, takže
+vliv nesouladu bodů lze oddělit od vlivu druhého volného parametru.
+Pevná inicializace eliminuje rozdílnou implementaci `rand()` jako
+zdroj rozdílu mezi platformami.
+
+Po poslední epoše se každý model ověří na $x=(2,4,6)$ km. Pro A
+jsou validační cíle $(1{,}25;2{,}5;3{,}75)$, pro B a C
+$(2{,}25;3{,}5;4{,}75)$ míle. V C validační cíle vyjadřují
+neporušenou výchozí přímku $0{,}625x+1$, nikoli šum v učení.
+Znamená to kontrolu chování vůči zvolené syntetické referenci,
+nikoli důkaz obecné kvality na reálných datech.
 
 ## 3. Terminologie a jednotky
 
@@ -179,6 +207,28 @@ aktualizaci parametrů. Ztráta z trénovací sady ji nenahrazuje.
 Protože validační cíle pocházejí ze stejné přesné přímky bez
 šumu, nízká validační MSE neprokazuje chování na jiném vztahu
 ani odolnost vůči chybám měření.
+
+### 4.4 Očekávání pro tři případy
+
+V A mají všechny body společné optimum $a_\star=0{,}625$.
+Po kroku SGD na bodu $i$ platí
+
+$$
+a'-a_\star=(a-a_\star)(1-2\eta x_i^2).
+$$
+
+Je-li $0<\eta<1/x_i^2$, klesá absolutní odchylka $a$ od optima,
+a proto klesá i MSE celé přesné sady. Pro největší $x=5$ je mez
+$1/25=0{,}04$; zvolená hodnota $0{,}01$ je pod ní. U B se mění
+$a$ i $b$, takže gradient jednoho bodu může zlepšit tento bod a
+zhoršit celou sadu. U C body nemají společné nulové reziduum a
+jednobodové gradienty mohou směřovat k různým dílčím optimům.
+BGD používá gradient průměrné MSE celé sady; očekávaný pokles při
+zvoleném kroku bude ověřen měřením, nikoli předpokládán jako výsledek.
+
+Srovnání po 100 epochách zahrnuje 300 aktualizací SGD a 100 BGD.
+Proto z něj nelze bez dalšího vyvodit výpočetní efektivitu jedné
+metody. Sledují se trajektorie, nikoli časový výkon.
 
 ## 5. Požadavky na architekturu řešení
 
@@ -374,6 +424,36 @@ se stejnými konečnými parametry. Toto vyhodnocení se může
 odvodit z vypsaných $a$ a $b$ jako v oddílu 10.1; nesmí se
 zaměnit se ztrátou jednotlivého kroku před aktualizací.
 
+### 5.6 Runner pro srovnání A, B a C
+
+Runner přidá šest oddělených běhů po původních čtyřech: SGD a BGD
+pro každý případ A, B, C. Pro A se přidá jediná operace optimalizátoru
+`optimizer_update_slope_only(self, lr)`, která použije uložené $g_a$
+a ponechá $b$ beze změny. Výpočet ztráty a gradientů zůstává v
+`optimizer_backward` a `optimizer_backward_batch`. Pro B a C se
+použije stávající `optimizer_update`.
+
+Runner po každé aktualizaci vyhodnotí MSE všech tří trénovacích bodů
+se stejnými novými parametry a vypíše ji spolu s epochou, krokem,
+$a$ a $b$. U každého běhu také spočítá, kolikrát tato MSE oproti
+předchozímu kroku vzrostla. Po 100 epochách vypíše konečnou MSE a
+validační MSE. Diagnostický průchod navíc slouží jen k pozorování;
+jeho časová režie není měřením rychlosti učení.
+
+```mermaid
+flowchart TD
+    Start[Volba případu A, B nebo C a metody SGD či BGD] --> Init[Pevné a = -0,5; b = 0]
+    Init --> Epoch[100 epoch, lr = 0,01]
+    Epoch --> Grad[Gradient z bodu nebo celé sady]
+    Grad --> Update[A: upravit jen a; B a C: upravit a i b]
+    Update --> Measure[MSE celé trénovací sady po kroku]
+    Measure --> Count[Zaznamenat případný růst MSE]
+    Count --> More{Další krok či epocha?}
+    More -->|ano| Grad
+    More -->|ne| Validate[Validační MSE na třech neviděných vstupech]
+    Validate --> End[Souhrn běhu]
+```
+
 ## 6. Výpočetní optimalizace a paralelizace
 
 Optimalizace parametrů modelu řeší matematickou úlohu prokládání bodů. Optimalizace jejího výpočtu je samostatná technická úloha: volba rozložení bodů v paměti, průchodů daty, redukce součtů, vektorizace a případné rozdělení mezi vlákna. Před návrhem těchto změn se musí nejprve ustálit referenční sekvenční chování a měřítka přesnosti.
@@ -414,6 +494,10 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-028 | Každý běh musí mít oddělená konstantní validační pole s body $(2;1{,}25)$, $(4;2{,}5)$ a $(6;3{,}75)$, která se během učení nesmějí předat optimalizátoru. | Implementováno a ověřeno na obou platformách. |
 | LR-029 | Po desáté epoše musí každý ze čtyř běhů vypsat pro každý validační bod $x$, cíl a predikci podle finálního modelu a jednou spočítat validační MSE jako průměr tří čtvercových reziduí. | Implementováno a ověřeno na obou platformách. |
 | LR-030 | Validace nesmí změnit parametry modelu a musí proběhnout před prázdným řádkem oddělujícím experimenty. | Implementováno a ověřeno na obou platformách. |
+| LR-031 | Runner musí po původních čtyřech bězích provést šest srovnávacích běhů A–C pro SGD a BGD s daty z oddílu 2.5, pevnou inicializací a 100 epochami. | Implementováno a ověřeno na obou platformách. |
+| LR-032 | V A se musí aktualizovat pouze $a$ a $b$ musí zůstat přesně nulové; B a C aktualizují oba parametry. | Implementováno a ověřeno na obou platformách. |
+| LR-033 | Po každé aktualizaci musí být vyhodnocena a vypsána MSE celé trénovací sady; souhrn musí obsahovat počet jejích zvýšení mezi sousedními kroky. | Implementováno a ověřeno na obou platformách. |
+| LR-034 | Každý srovnávací běh musí po tréninku vypsat validační MSE z bodů v oddílu 2.5 bez úpravy modelu. | Implementováno a ověřeno na obou platformách. |
 
 Kritéria konvergence a přesnosti parametrů se stanoví až z pozorovaných
 výsledků prvního běhu; identifikátory požadavků zůstanou stabilní.
@@ -440,8 +524,10 @@ Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodso
 | LR-T15 | LR-025 | Gradienty z LR-T13 a `lr = 0.01f` | Stávající `optimizer_update` nastaví $a=7/48$ a $b=0{,}0375$. | Splněno na obou platformách. |
 | LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 kroků SGD a 10 kroků BGD pro každé `lr`, s prázdným řádkem po každém běhu. | Splněno na obou platformách. |
 | LR-T17 | LR-028 až LR-030 | Čtyři běhy na obou platformách | Každý běh vypíše tři dosud neviděné body, jejich predikce a jednu validační MSE po trénování; MSE odpovídá vypsanému finálnímu modelu s tolerancí zaokrouhlení. | Splněno integrační kontrolou na obou platformách. |
+| LR-T18 | LR-032 | Model s $b=0$, uložený gradient $g_a$ | `optimizer_update_slope_only` mění pouze $a$; $b$ zůstává přesně nula po SGD i BGD zpětném průchodu. | Splněno na obou platformách. |
+| LR-T19 | LR-031, LR-033, LR-034 | Spuštění šesti běhů na Linuxu a Windows | Každý má 100 epoch, správný počet kroků, počty růstů MSE a validační souhrn; původní čtyři běhy zůstanou stejné. | Splněno na obou platformách. |
 
-Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_bgd_gradient_and_update`, LR-T14 `test_bgd_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12, LR-T16 a LR-T17 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
+Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_bgd_gradient_and_update`, LR-T14 `test_bgd_single_and_reference`, LR-T18 `test_slope_only_update`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12, LR-T16, LR-T17 a LR-T19 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -714,6 +800,109 @@ Body $2$ a $4$ km ověřují interpolaci, $6$ km jedinou jednoduchou
 extrapolaci. Kritérium dostatečné přesnosti stále nebylo stanoveno.
 Závěr zatím **není odsouhlasen vlastníkem**.
 
+### 10.4 Navazující srovnání geometrie dat
+
+Dne 2026-11-25 z adresáře projektu prošly příkazy
+`make PLATFORM=linux_x86_64 test build` ve WSL Arch a
+`mingw32-make PLATFORM=win32_x86_64 test build` v MSYS2 MinGW-w64.
+Poté se spustily výsledné binární soubory
+`.cache/linux_x86_64/release/linear_regression` a
+`.cache/win32_x86_64/release/linear_regression.exe`.
+Procesorem byl Intel Core i7-8565U; použity byly překladače a volby
+uvedené v úvodu oddílu 10. Síť ani modelové váhy se nepoužily,
+výkon a spotřeba paměti se neměřily. Vstupní body, parametry a
+validační sada jsou přesně uvedeny v oddílu 2.5. Žádné semínko
+generátoru se pro šest nových běhů nepoužilo, protože model byl
+inicializován pevně.
+
+Dne 2026-11-25 z adresáře projektu prošly příkazy
+`make PLATFORM=linux_x86_64 test build` ve WSL Arch a
+`mingw32-make PLATFORM=win32_x86_64 test build` v MSYS2 MinGW-w64.
+Poté se spustily výsledné binární soubory
+`.cache/linux_x86_64/release/linear_regression` a
+`.cache/win32_x86_64/release/linear_regression.exe`.
+Procesorem byl Intel Core i7-8565U; použity byly překladače a volby
+uvedené v úvodu oddílu 10. Síť ani modelové váhy se nepoužily,
+výkon a spotřeba paměti se neměřily. Vstupní body, parametry a
+validační sada jsou přesně uvedeny v oddílu 2.5. Žádné semínko
+generátoru se pro šest nových běhů nepoužilo, protože model byl
+inicializován pevně.
+
+Překlad a osm jednotkových testů prošly pro `linux_x86_64` i
+`win32_x86_64`. V každém systému následovalo šest běhů se shodnou
+pevnou inicializací. Všech šest nových běhů dalo na obou platformách
+stejné vypsané hodnoty v každém kroku. Původní čtyři běhy mají proti
+předchozímu záznamu beze změny celé výstupy. `LR-T18` a `LR-T19`
+jsou splněné, v A zůstalo $b=0$ po všech aktualizacích.
+
+| Případ | Metoda | Aktualizace | Růst MSE | Konečná trénovací MSE | Validační MSE | Konečné $a$ | Konečné $b$ |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A | SGD | 300 | 0 | 3,90798505e-14 | 9,9475983e-14 | 0,62499994 | 0 |
+| A | BGD | 100 | 0 | 1,23160745e-13 | 2,65269279e-13 | 0,624999881 | 0 |
+| B | SGD | 300 | 96 | 0,00648495322 | 0,00409179134 | 0,663495183 | 0,834182739 |
+| B | BGD | 100 | 0 | 0,0422506444 | 0,0342057385 | 0,737556279 | 0,570315659 |
+| C | SGD | 300 | 97 | 0,0218765512 | 0,00469596731 | 0,657363296 | 0,914169729 |
+| C | BGD | 100 | 0 | 0,066713348 | 0,0535387099 | 0,750855088 | 0,602880776 |
+
+Počet růstů porovnává MSE celé sady před a po **každé** aktualizaci;
+zahrnuje i první krok oproti výchozímu modelu. MSE se pro diagnostiku
+znovu počítá po kroku, mimo funkce optimalizátoru. Validační sada se
+nepoužívá pro gradient ani aktualizaci.
+
+| Případ | Epocha | MSE po epoše, SGD | MSE po epoše, BGD |
+|---|---:|---:|---:|
+| A | 0 | 14,7656 | 14,7656 |
+| A | 1 | 2,38381 | 8,67891 |
+| A | 5 | 0,00161938 | 1,0359 |
+| A | 10 | 1,77651e-07 | 0,0726747 |
+| A | 25 | 3,90799e-14 | 2,50929e-05 |
+| A | 50 | 3,90799e-14 | 3,99811e-11 |
+| A | 100 | 3,90799e-14 | 1,23161e-13 |
+| B | 0 | 22,5156 | 22,5156 |
+| B | 1 | 3,37068 | 12,7398 |
+| B | 5 | 0,0927146 | 1,37389 |
+| B | 10 | 0,0761789 | 0,164395 |
+| B | 25 | 0,0505098 | 0,0804476 |
+| B | 50 | 0,0254812 | 0,064899 |
+| B | 100 | 0,00648495 | 0,0422506 |
+| C | 0 | 23,2656 | 23,2656 |
+| C | 1 | 3,58293 | 13,1794 |
+| C | 5 | 0,134417 | 1,45224 |
+| C | 10 | 0,112205 | 0,203493 |
+| C | 25 | 0,078598 | 0,114467 |
+| C | 50 | 0,0460792 | 0,0950297 |
+| C | 100 | 0,0218766 | 0,0667133 |
+
+![Průběh MSE celé trénovací sady v případech A, B a C](graf-srovnani-geometrie.svg)
+
+Graf používá MSE po každém kroku SGD a po každém kroku BGD; vodorovná
+souřadnice SGD je číslo epochy včetně třetin. Svislá osa má v každém
+panelu vlastní logaritmickou stupnici. Křivky Linuxu a Windows se
+vypisovanou přesností překrývají, proto je každá metoda zakreslena
+jednou. Tabulka uvádí výběr konců epoch, takže některé krátké vzestupy
+SGD viditelné v řádcích po kroku nemusí být patrné v tabulce.
+
+Konkrétní protipříklad pochází z B, páté epochy a třetího bodu
+$(x,y)=(5;4{,}125)$. Čtvercová chyba tohoto bodu při daném kroku
+klesla přibližně z $0{,}010320$ na $0{,}002378$, ale MSE celé sady
+vzrostla z $0{,}087208$ na $0{,}092715$. Není tedy nutný šum ani
+nekolinearita: stačí posunutá přesná přímka a společná optimalizace
+dvou parametrů. Případ C ukazuje podobné růsty při rozporných cílech.
+Případ A odpovídá odvozené monotonii při pevném $b=0$ a zvoleném
+$\eta=0{,}01$.
+
+**Navržený závěr k odsouhlasení:** Tato trojice syntetických úloh
+potvrdila, že krok SGD s nižší chybou právě zpracovaného bodu může
+zvýšit MSE celé sady, a to už na přesné posunuté přímce. BGD v těchto
+bězích snižovalo MSE celé sady po každém kroku. Po 100 epochách mělo
+SGD v B a C nižší konečnou trénovací i validační MSE, ale provedlo
+třikrát více aktualizací. Experiment tedy nepotvrzuje obecnou
+přednost BGD pro nekolineární data ani obecnou přednost SGD pro
+lineární vztah; jde o konkrétní trajektorie při daném pořadí,
+inicializaci a rychlosti učení. Závěr zatím **není odsouhlasen
+vlastníkem**; kritérium praktické použitelnosti modelu také nebylo
+stanoveno.
+
 ## 11. Vazba na implementaci a údržba
 
 | Oblast | Zdrojový soubor |
@@ -751,7 +940,7 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Runner:** Vstupní modul experimentu v `src/main.c`, který řídí spolupráci modelu a optimalizátoru.
 - **UML diagram:** Grafické znázornění modulů, jejich rozhraní a směru závislostí; šipka s plnou čarou zde vyjadřuje uložený ukazatel na model.
 - **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
-- **Epocha:** Jeden průchod všemi třemi trénovacími body; každý ze čtyř běhů jich provede deset.
+- **Epocha:** Jeden průchod všemi třemi trénovacími body; původní běhy jich mají deset a srovnávací běhy sto.
 - **Mini dávka:** Podmnožina bodů se společnou aktualizací gradientu; tento experiment používá buď jednotlivé body, nebo celou trojici.
 - **Dávkový gradient:** Zde průměr gradientů čtvercové ztráty všech tří bodů, vypočtený před jedinou aktualizací parametrů.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
@@ -767,4 +956,7 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **MSE po epoše:** Průměr čtvercových chyb všech tří bodů vyhodnocených se stejnými parametry po dokončení epochy.
 - **Logaritmická osa:** Stupnice grafu, na níž stejný krok znamená stejný násobek MSE; umožňuje zobrazit rostoucí i klesající běh v jednom obrázku.
 - **BGD (dávkový gradientní sestup):** Aktualizace modelu z průměrného gradientu celé trénovací trojice jednou za epochu.
+- **Vázaný posun:** V případu A je modelové $b$ pevně nulové a optimalizuje se pouze sklon $a$.
+- **Nekolineární body:** Trojice, kterou nelze přesně popsat jedinou přímkou; v případu C se od přesné přímky liší prostřední cíl.
+- **Růst MSE po kroku:** Zvýšení chyby celé trénovací trojice mezi dvěma sousedními aktualizacemi téhož běhu.
 - **Matice druhých derivací:** Matice změn gradientu MSE při změně $a$ a $b$; pro tuto kvadratickou úlohu určuje teoretickou mez stabilní rychlosti učení.
