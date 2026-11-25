@@ -5,7 +5,7 @@
 - **Stav dokumentu:** původní i navazující běhy SGD, BGD a validace ověřeny; závěr čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 25
+- **Revize:** 26
 
 ## 1. Účel dokumentu
 
@@ -863,10 +863,15 @@ nepoužívá pro gradient ani aktualizaci.
 | C | 50 | 0,0460792 | 0,0950297 |
 | C | 100 | 0,0218766 | 0,0667133 |
 
-![Průběh MSE celé trénovací sady v případech A, B a C](graf-srovnani-geometrie.svg)
+![Trénovací body a průběh MSE v případech A, B a C](graf-srovnani-geometrie.svg)
 
-Graf používá MSE po každém kroku SGD a po každém kroku BGD; vodorovná
-souřadnice SGD je číslo epochy včetně třetin. Svislá osa má v každém
+Horní řada grafu zobrazuje všechny tři trénovací body každého
+případu v souřadnicích $x$ a $y$. Přerušovaná spojnice krajních
+bodů slouží jen k názornému rozlišení přesné přímky v A a B od
+odchylky prostředního bodu o $0{,}25$ míle v C. Nejde o
+naučenou regresní přímku. Dolní řada používá MSE po každém
+kroku SGD a po každém kroku BGD. Vodorovná souřadnice SGD je
+číslo epochy včetně třetin. Svislá osa má v každém
 panelu vlastní logaritmickou stupnici. Křivky Linuxu a Windows se
 vypisovanou přesností překrývají, proto je každá metoda zakreslena
 jednou. Tabulka uvádí výběr konců epoch, takže některé krátké vzestupy
