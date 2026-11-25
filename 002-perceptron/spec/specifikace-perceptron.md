@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 5
+- **Revize:** 6
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -84,18 +84,27 @@ pro návaznost na první experiment; binární křížovou entropii
 Ověření správnosti AND proto odlišíme od tvrzení o zobecnění
 na jiná data.
 
-## 4. Průchod jedním neuronem
+## 4. Architektura programu
+
+Perceptron uchovává váhy a bias, počítá sigmoidální výstup
+a nezná optimalizátor. Optimizer používá model k výpočtu
+gradientů a aktualizaci parametrů. Runner v souboru main.c
+vytváří model a optimalizátor, řídí učení a vyhodnocení AND.
 
 ```mermaid
-flowchart LR
-    X["Vstupy x₁ … xₙ"] --> Z["Vážený součet z"]
-    W["Váhy w₁ … wₙ a bias b"] --> Z
-    Z --> A["Sigmoida σ(z)"]
-    A --> Y["Výstup ŷ"]
+classDiagram
+    direction LR
+    class Runner
+    class Optimizer
+    class Perceptron
+    Runner ..> Perceptron : vytváří a vyhodnocuje
+    Runner ..> Optimizer : řídí učení
+    Optimizer ..> Perceptron : používá a upravuje
 ```
 
-Konkrétní programové rozhraní a vlastnictví dat zatím nejsou
-určeny.
+Konkrétní podpisy funkcí, způsob předání modelu a vlastnictví
+dat zatím nejsou určeny. Symboly tříd proto zatím neobsahují
+metody ani atributy.
 
 ## 5. Gradient a řetězcové pravidlo
 
@@ -126,7 +135,17 @@ $$
  \sigma(z)\bigl(1-\sigma(z)\bigr).
 $$
 
-Pro zvolenou MSE celé tabulky je výsledkem
+Pro čtvercovou ztrátu jednoho vzorku
+$e_k=(\hat y_k-y_k)^2$ lze derivaci ztráty oddělit:
+
+$$
+\frac{\partial e_k}{\partial\hat y_k}
+=2(\hat y_k-y_k).
+$$
+
+Optimizer ji pak řetězovým pravidlem násobí derivací
+sigmoidy a příslušným vstupem. Pro zvolenou MSE celé
+tabulky se navíc sčítá přes vzorky a dělí jejich počtem:
 
 $$
 \frac{\partial\operatorname{MSE}}{\partial w_i}
@@ -144,13 +163,16 @@ $$
 V blízkosti nasycení sigmoidy se její derivace blíží nule,
 takže MSE může při nevhodném počátečním nastavení učit pomalu.
 Zda budeme gradient vyhodnocovat po vzorcích nebo po celé
-tabulce, zatím není rozhodnuto.
+tabulce, zatím není rozhodnuto. Oddělená funkce pro
+derivaci ztráty je možná; konkrétní rozhraní a případné
+spojení výpočtů kvůli výkonu vybereme při návrhu Optimizeru.
 
 ## 6. Otevřené návrhové otázky
 
-Před implementací společně určíme optimalizaci, inicializaci,
-rozhraní, klasifikační práh a podmínky ověření. Následně
-doplníme metodiku a měřitelné požadavky experimentu.
+Před implementací společně určíme způsob aktualizace gradientů,
+inicializaci, rozhraní ztrátové funkce, klasifikační práh a
+podmínky ověření. Následně doplníme metodiku a měřitelné
+požadavky experimentu.
 
 ## Slovník pojmů
 
