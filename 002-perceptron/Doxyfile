@@ -1,0 +1,19 @@
+# Source API documentation for 002-perceptron.
+# Run manually from this directory: doxygen Doxyfile
+PROJECT_NAME           = "002-perceptron"
+PROJECT_BRIEF          = "C sigmoid neuron research experiment"
+OUTPUT_LANGUAGE        = English
+OUTPUT_DIRECTORY       = .cache/doxygen
+INPUT                  = include src
+FILE_PATTERNS          = *.h *.c
+RECURSIVE              = YES
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+SOURCE_BROWSER         = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES

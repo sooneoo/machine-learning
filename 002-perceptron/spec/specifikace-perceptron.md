@@ -1,8 +1,8 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 11
-- **Stav:** rozpracovaný návrh; implementace nebyla schválena
+- **Revize:** 13
+- **Stav:** implementováno; závěr běhu čeká na odsouhlasení
 - **Zvolená aktivační funkce:** sigmoida
 
 ## 1. Cíl
@@ -11,8 +11,9 @@ Navázat na lineární regresi a ověřit model jediného neuronu.
 Teoretický model připouští $n$ vstupů, ale tento experiment
 používá dvě váhy pro dva vstupy určené při překladu.
 Sigmoidální aktivace mění afinní výpočet na nelineární výstup.
-První úlohou je naučit logickou funkci AND se dvěma binárními vstupy. Pro učení
-volíme MSE; postup optimalizace a podmínky ověření ještě určíme.
+První úlohou je naučit logickou funkci AND se dvěma
+binárními vstupy. Používáme MSE a BGD; běh má
+$10\,000$ epoch a rychlost učení $0{,}2$.
 
 ## 2. Teorie konceptu
 
@@ -77,9 +78,9 @@ $$
 AND je lineárně separovatelná: lze zvolit váhy a bias tak,
 aby výstup pro $(1,1)$ převýšil výstupy ostatních kombinací.
 V tomto běhu však spojitý výstup nepřevádíme na třídy.
-Sigmoida zajišťuje hladký, diferencovatelný výstup, ale pro konečné
-parametry nikdy nevrátí přesně $0$ ani $1$; MSE se proto může
-blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
+Sigmoida zajišťuje hladký, diferencovatelný výstup, ale pro
+konečné parametry nikdy nevrátí přesně $0$ ani $1$;
+MSE se proto může blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
 pro návaznost na první experiment; binární křížovou entropii
 (BCE) zatím nepoužijeme.
 
@@ -252,15 +253,14 @@ kroky, pokud to zlepší výkon či numerickou stabilitu.
 `main` zavolá `run_and_experiment`. Funkce
 v každé epoše zavolá `optimizer_backward` nad celou
 čtyřřádkovou dávkou, poté aktualizuje parametry (BGD).
-První pozorovací běh má 10 epoch a rychlost učení
-$\eta=0{,}01$. Stejně jako v experimentu 001 Runner
-vypíše počáteční nastavení, pro každou epochu ztrátu před
-aktualizací a váhy s biasem po ní. Po poslední epoše
+Pozorovací běh má $10\,000$ epoch a rychlost učení
+$\eta=0{,}2$. Runner vypíše počáteční nastavení,
+průběžnou ztrátu před aktualizací a váhy s biasem po ní. Po poslední epoše
 vypíše pro každou kombinaci AND vstupy, cíl a přímo
 spojitý výstup `perceptron_forward` bez prahování.
 Nakonec vypíše MSE celé trénovací tabulky.
-Samostatné běhy oddělí prázdným řádkem. Deset epoch
-je počáteční pozorování, nikoli předpoklad dosažené přesnosti.
+Samostatné běhy oddělí prázdným řádkem. Zvolený počet epoch
+není zárukou dosažené přesnosti.
 
 ## 7. Požadavky a ověření
 
@@ -268,17 +268,65 @@ je počáteční pozorování, nikoli předpoklad dosažené přesnosti.
   v intervalu $[-1,1]$; test ověří rozsah a opakování při
   stejném semínku v jednom C runtime.
 - `perceptron_forward` spočítá sigmoidální výstup ze
-  dvou vstupů; test ověří známé hodnoty a mezní průběh.
+  dvou vstupů; test ověří známé hodnoty, monotonii
+  a zachování parametrů.
 - Dávková MSE funkce vrátí ztrátu a uloží gradienty do
   Optimizeru; test porovná gradienty s numerickou derivací
   a ověří krok `optimizer_update`.
 - Test s náhradní funkcí `backward` ověří, že jednotný
   obal předá dávku vybranému callbacku a vrátí jeho ztrátu.
   Aktualizace před prvním výpočtem gradientů model nezmění.
-- Runner během 10 epoch vypíše ztrátu a parametry, poté
-  spojité výstupy na čtyřech trénovacích kombinacích a MSE.
+- Runner během $10\,000$ epoch průběžně vypíše ztrátu
+  a parametry, poté spojité výstupy na čtyřech kombinacích a MSE.
   Výsledek je pozorováním prvního běhu, bez požadavku na
   přesnou hodnotu MSE či klasifikační správnost.
+
+## 8. Průběh a výsledky běhu
+
+Při $10\,000$ krocích BGD klesla MSE celé trénovací tabulky:
+
+| Platforma | MSE před učením | MSE po učení |
+|---|---:|---:|
+| `linux_x86_64` | $0{,}312519$ | $0{,}002668$ |
+| `win32_x86_64` | $0{,}298458$ | $0{,}002682$ |
+
+Následující graf zobrazuje naměřené hodnoty po přibližně
+$100$ krocích a konečnou MSE. Nejde o teoretickou křivku.
+
+![Naměřený vývoj MSE při učení AND na Linuxu a Windows](graf-mse-and.svg)
+
+Závěrečné spojité výstupy na stejných čtyřech vzorcích:
+
+| $(x_1,x_2)$ | Cíl $y$ | Linux $\hat y$ | Windows $\hat y$ |
+|---|---:|---:|---:|
+| $(0,0)$ | 0 | $0{,}000250$ | $0{,}000252$ |
+| $(0,1)$ | 0 | $0{,}055890$ | $0{,}056039$ |
+| $(1,0)$ | 0 | $0{,}055890$ | $0{,}056039$ |
+| $(1,1)$ | 1 | $0{,}933477$ | $0{,}933299$ |
+
+Stejný seed 42 dal na Linuxu počáteční váhy přibližně
+$(-0{,}933;-0{,}340)$ a bias $0{,}381$; na Windows
+$(-0{,}989;-0{,}976)$ a bias $0{,}091$. Použité C runtime
+mají odlišné posloupnosti `rand()`. Křivky tedy nezačínají
+ze stejného modelu a nesrovnávají výkon platforem.
+
+## 9. Navržený závěr
+
+Jediný sigmoidální neuron s BGD a MSE při těchto podmínkách
+postupně přiblížil spojité výstupy pravdivostní tabulce AND.
+MSE celé čtyřprvkové sady klesla na méně než $0{,}003$.
+Výstupy nebyly prahovány a vyhodnocení proběhlo na trénovacích
+datech; výsledek proto neprokazuje zobecnění na jiné úlohy.
+Závěr zatím není odsouhlasen.
+
+## 10. Vazba na zdrojový kód
+
+- `src/perceptron.c`: inicializace a sigmoidální výstup.
+- `src/optimizer.c`: MSE, dávkové gradienty a aktualizace.
+- `src/main.c`: trénovací běh a diagnostický výpis.
+- `config/*.mk`: překlad pro Linux a Windows.
+- `tests/test_perceptron.c`: chování modelu, gradienty
+  a přepínatelné volání `backward`.
 
 ## Slovník pojmů
 
