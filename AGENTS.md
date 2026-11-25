@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This repository contains independent artificial intelligence research experiments. Keep each experiment in its own directory with its own `README.md`, `Makefile`, `config/`, `spec/`, `src/`, `include/` where needed, and `tests/`. The README is a short entry point with build, run, and test commands; the Markdown specification under `spec/` is the source of truth for intended behavior and research conclusions. Keep raw data, downloaded models, generated outputs, and credentials out of Git unless explicitly requested.
+This repository develops custom methods and mechanisms for programming machine learning models in C without a machine learning framework. The primary goals are the highest achievable performance on the target hardware and direct control over algorithms, memory, and execution; measure performance before claiming an advantage. A secondary goal is to help the repository owner learn the theory and practice of machine learning. Keep each independent research experiment in its own directory with its own `README.md`, `Makefile`, `config/`, `spec/`, `src/`, `include/` where needed, and `tests/`. The README is a short entry point with build, run, and test commands; the Markdown specification under `spec/` is the source of truth for intended behavior and research conclusions. Keep raw data, downloaded models, generated outputs, and credentials out of Git unless explicitly requested.
 
 ## Implementation
 

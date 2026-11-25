@@ -1,6 +1,12 @@
 # 001-LinearRegression
 
-První experiment se skalární lineární regresí v čistém C.
+První experiment řady zaměřené na vlastní mechanismy strojového
+učení v C bez frameworku. Cílem řady je co nejvyšší výkon a
+přímá kontrola nad výpočtem; vedlejším cílem je porozumět teorii
+i praxi. Tato fáze ověřuje model lineární regrese a optimalizaci
+jeho parametrů; porovnání SGD, BGD a vlivu rychlosti učení je
+dílčí výzkumnou otázkou. Výkon se zde zatím neměří.
+
 `Regression` počítá $\hat y=ax+b$. `Optimizer` podporuje SGD
 (aktualizaci po každém bodu) a BGD (aktualizaci po celé trénovací
 množině). `src/main.c` porovnává oba postupy při

@@ -5,13 +5,15 @@
 - **Stav dokumentu:** běhy SGD, BGD i validace ověřeny; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 22
+- **Revize:** 23
 
 ## 1. Účel dokumentu
 
-Experiment má ukázat, jak navrhnout a ověřit malý systém strojového učení v čistém C bez specializovaného frameworku. Model prokládá body v dvourozměrném grafu přímkou. První fáze ověřuje schválenou architekturu, způsob učení a pozorovatelnost výpočtu; měření výkonu a další varianty následují až po vyhodnocení tohoto běhu.
+Cílem celé řady experimentů je vytvářet vlastní postupy a mechanismy pro programování modelů strojového učení v C bez frameworku určeného pro strojové učení. Hlavní motivací je co nejvyšší výkon na cílovém hardwaru a přímá kontrola nad algoritmem, pamětí a průběhem výpočtu. Vedlejším cílem vlastníka repozitáře je porozumět teoretickému i praktickému fungování strojového učení. Výkonnostní přínos je zatím výzkumným cílem, nikoli naměřeným výsledkem tohoto experimentu.
 
-Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od návrhů a otevřených rozhodnutí. Vlastník navrhl oddělení modelu od optimalizátoru, MSE a stochastický gradientní sestup (SGD). První pozorovací běh má pevné pořadí vzorků, deset epoch a rychlost učení $\eta=0{,}1$. Skutečný průběh prvního běhu a jeho omezení jsou vyhodnoceny v oddílu 10.
+Primárním cílem první fáze je vytvořit model lineární regrese $\hat y=ax+b$ a ověřit mechanismy optimalizace jeho parametrů $a$ a $b$ v oddělených modulech. Sekundárně fáze porovnává jednobodové kroky SGD s dávkovými kroky BGD a zkoumá vliv rychlosti učení $\eta$ na průběh optimalizace. Převod kilometrů na míle poskytuje kontrolovatelný syntetický vztah; oddělené validační body ověřují výsledek mimo trénovací vstupy.
+
+Dokument odděluje potvrzené návrhové volby vlastníka, naměřené výsledky a dosud neodsouhlasený výklad. Běhy používají pevné pořadí tří trénovacích vzorků, seed 42, deset epoch a rychlosti učení $\eta=0{,}01$ a $0{,}1$. Výsledky, omezení a navržený závěr jsou v oddílu 10.
 
 ## 2. Rozsah a hranice
 
@@ -20,7 +22,7 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 - Vstupem dopředného výpočtu je skalár $x$, výstupem odhad $\hat y$.
 - Model má dva parametry typu `float`: sklon $a$ a posun $b$.
 - Dopředný výpočet vychází ze vztahu $\hat y=ax+b$; vztah $\hat y=ax$ je jeho případ s $b=0$.
-- Projekt používá C bez frameworku pro strojové učení a cílem je úsporný výpočet na dostupném hardwaru.
+- Projekt používá C bez frameworku pro strojové učení, aby bylo možné přímo řídit algoritmus, paměť a výpočet a usilovat o maximální výkon na dostupném hardwaru; výkonnostní přínos vyžaduje samostatné měření.
 - Zdrojový kód, veřejné rozhraní, testy a platformní pravidla překladu budou oddělené podle kořenového `AGENTS.md`.
 
 ### 2.2 První pozorovací běh a další varianty
