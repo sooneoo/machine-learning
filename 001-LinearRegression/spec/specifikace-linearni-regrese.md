@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 8
+- **Revize:** 9
 
 ## 1. Účel dokumentu
 
@@ -25,18 +25,30 @@ Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od
 
 ### 2.2 Zatím neurčený rozsah
 
-Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Dosud nejsou určeny původ a reprezentace bodů, pořadí jejich zpracování, hodnota rychlosti učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
+Výchozí metodou učení je SGD se čtvercovou ztrátou; $a$ i $b$ se mají učit. Pro první prototyp je určena trojice učicích bodů; dosud nejsou určeny jejich uložení v programu, pořadí zpracování, hodnota rychlosti učení, počet průchodů, ukončení, diagnostika, přesnost a rozsah podporovaných vstupů. Není rozhodnuto o mini dávkách ani o paralelizaci. V této fázi se neimplementuje trénování ani dopředný výpočet.
+
+### 2.3 Učicí sada prototypu
+
+První prototyp používá záměrně zjednodušený převod kilometrů na míle. Jde o přesně zadanou syntetickou úlohu s poměrem $0{,}625=\frac{5}{8}$ míle na kilometr, nikoli o požadavek na přesný fyzikální převod.
+
+| Bod | Vstup $x$ [km] | Cíl $y$ [míle] |
+|---|---:|---:|
+| 1 | $1$ | $0{,}625$ |
+| 2 | $3$ | $1{,}875$ |
+| 3 | $5$ | $3{,}125$ |
+
+Všechny tři dvojice jsou určeny k učení; hodnoty zadal vlastník repozitáře dne 2026-11-25. Způsob uložení a předání při běhu se ještě určí. Pro první verzi se předpokládá, že předaná trénovací data jsou platná. Nezavádí se průběžná kontrola jejich hodnot v dopředném výpočtu ani v kroku optimalizátoru.
 
 ## 3. Terminologie a jednotky
 
 | Symbol | Význam | Jednotka |
 |---|---|---|
-| $x$ | Vstupní souřadnice bodu. | Podle budoucích dat. |
-| $y$ | Pozorovaná výstupní souřadnice bodu. | Podle budoucích dat. |
-| $\hat y$ | Odhad výstupu vrácený modelem. | Stejná jako $y$. |
-| $a$ | Sklon přímky, váha násobící vstup. | Jednotka $y$ dělená jednotkou $x$. |
-| $b$ | Posun přímky na výstupní ose. | Stejná jako $y$. |
-| Reziduum | Rozdíl mezi pozorovaným a odhadnutým výstupem. | Stejná jako $y$. |
+| $x$ | Vstupní souřadnice bodu. | Kilometr. |
+| $y$ | Pozorovaná výstupní souřadnice bodu. | Míle. |
+| $\hat y$ | Odhad výstupu vrácený modelem. | Míle. |
+| $a$ | Sklon přímky, váha násobící vstup. | Míle na kilometr. |
+| $b$ | Posun přímky na výstupní ose. | Míle. |
+| Reziduum | Rozdíl mezi pozorovaným a odhadnutým výstupem. | Míle. |
 
 ## 4. Teorie modelu a koncept učení
 
@@ -69,6 +81,17 @@ b' &= b-\eta g_b.
 $$
 
 $\eta>0$ je rychlost učení. Gradient $\nabla e_i=(g_a,g_b)^\mathsf{T}$ vyjadřuje místní sklon ztráty v současném bodě $(a,b)$, nikoli přesný rozdíl ztrát mezi dvěma vzdálenými nastaveními parametrů. Krok v opačném směru obvykle snižuje ztrátu při vhodném $\eta$; příliš velký krok ji může zvýšit. Při SGD se aktualizuje po jednotlivých bodech. Gradient celé MSE je průměrem gradientů všech bodů; jeho použití pro jedinou aktualizaci by byl dávkový gradientní sestup. Analytické nejmenší čtverce zůstávají možnou kontrolní základnou, nikoli vybranou metodou trénování.
+
+### 4.1 Teoretická referenční přímka pro učicí sadu
+
+Za předpokladu zvoleného afinního modelu určují již dva různé vstupy jedinou přímku procházející těmito body. Třetí bod soulad se stejnou přímkou potvrzuje:
+
+$$
+a_\star=\frac{1{,}875-0{,}625}{3-1}=0{,}625,\qquad
+b_\star=0{,}625-a_\star\cdot1=0
+$$
+
+Pro $a_\star$ a $b_\star$ je teoretická MSE na této sadě nulová a očekávaný vztah je $\hat y=0{,}625x$. Tři přesné body postačují jako kontrolní úloha pro tento dvouparametrový model. Samy o sobě nedokazují chování při šumu, odlehlých bodech ani u jiných vztahů; SGD navíc dosáhne referenčních parametrů jen s vhodným průběhem učení.
 
 ## 5. Požadavky na architekturu řešení
 
@@ -153,6 +176,10 @@ classDiagram
 
 `tests/main.c` je spouštěč jednotkových testů, nikoli `Runner` experimentu. Vlastnictví trénovacích bodů, přesný řídicí cyklus a případné chyby vstupů zůstávají otevřené; po jejich odsouhlasení se upraví diagram, popis modulů i odpovídající požadavky a kontroly.
 
+### 5.4 Vstupní předpoklady prototypu
+
+`regression_forward` očekává platný ukazatel na `Regression` a konečné hodnoty modelových parametrů i $x$. Samotná afinní funkce může přijmout také záporné konečné $x$; ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. `optimizer_backward` očekává platný `Optimizer` s živým modelem a platné konečné $x$ a $y$. První verze trénovací body považuje za správně dodané a neprovádí jejich průběžnou validaci. Případné chování při porušení těchto předpokladů ani pravidla pro neplatné $\mathrm{lr}$ zatím nejsou součástí odsouhlaseného rozhraní.
+
 Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace neexistuje.
 
 ## 6. Výpočetní optimalizace a paralelizace
@@ -180,8 +207,10 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-013 | `Optimizer` musí obsahovat nevlastněný ukazatel na `Regression` a vlastní `float` gradienty `ga` a `gb`, inicializované na nulu; model musí žít déle než optimalizátor. | Potvrzená architektura. |
 | LR-014 | `optimizer_backward` musí vrátit čtvercovou ztrátu jednoho bodu, uložit gradienty do `Optimizer` a ponechat model beze změny. | Potvrzený postup SGD. |
 | LR-015 | `optimizer_update` musí upravit $a$ a $b$ podle uložených gradientů a argumentu $\mathrm{lr}$. | Potvrzený postup SGD; vstupní smlouva $\mathrm{lr}$ se doplní. |
+| LR-016 | První prototyp musí použít učicí dvojice $(1;0{,}625)$, $(3;1{,}875)$ a $(5;3{,}125)$ ve vztahu kilometrů k mílím. | Potvrzená učicí sada. |
+| LR-017 | První verze musí považovat trénovací hodnoty $x$ a $y$ za platné vstupy a neprovádět jejich průběžnou validaci v modelu ani optimalizátoru. | Potvrzený vstupní předpoklad. |
 
-Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
+Požadavky na konvergenci, přesnost parametrů, chování při porušení vstupních předpokladů a paměť budou doplněny po brainstormingu. Identifikátory zůstanou stabilní.
 
 ## 8. Akceptační scénáře a plán ověření
 
@@ -196,6 +225,7 @@ Požadavky na konvergenci, přesnost parametrů, chybná data a paměť budou do
 | LR-T07 | LR-012 | Dvě volání `regression()` po `srand(seed)` s pevným semínkem | Oba parametry leží v $[-1,1]$; opakování se stejným semínkem na téže platformě vrátí stejnou dvojici modelů. | Plánováno; kód neexistuje. |
 | LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Plánováno; kód neexistuje. |
 | LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Plánováno; kód neexistuje. |
+| LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Teoretický očekávaný výsledek; kód neexistuje. |
 
 Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
@@ -206,12 +236,12 @@ Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou 
 | LR-OP-01 | Jaká je ztráta pro jeden krok SGD? | Rozhodnuto: $e_i=(\hat y_i-y_i)^2$, tedy MSE pro jeden bod. |
 | LR-OP-02 | Jak řídit průchod SGD? | Pořadí bodů, pevná či proměnná rychlost učení, počet epoch, kritérium ukončení a případné mini dávky. |
 | LR-OP-03 | Mají se učit oba parametry? | Rozhodnuto: $a$ i $b$; $b=0$ lze použít jako počáteční hodnotu. |
-| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Pevná testovací sada, pole předaná API, soubor či generátor. |
+| LR-OP-04 | Odkud přicházejí body a jak jsou uloženy? | Rozhodnuto: první učicí sada má tři dvojice z oddílu 2.3. Otevřené: zdroj při běhu a reprezentace v `Runner`. |
 | LR-OP-05 | Jaký je veřejný podpis dopředné funkce? | Rozhodnuto: `float regression_forward(Regression *self, float x)`. |
 | LR-OP-06 | Jak posoudit výsledek? | Metriky, tolerance, degenerované vstupy, srovnávací základna a paměťové měření. |
 | LR-OP-07 | Jak prezentovat proložení bodů? | Číselný výstup, export bodů a přímky pro graf nebo vlastní vizualizace. |
 | LR-OP-08 | Jak zvolit semínko generátoru? | `Runner` volá `srand` před konstrukcí; konkrétní zdroj semínka a jeho výchozí hodnota se určí. |
-| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0` a `update` před `backward` nic nezmění. Otevřené: konečnost $x$, $y$, $\mathrm{lr}$, kladnost $\mathrm{lr}$ a případné přetečení. |
+| LR-OP-09 | Jak řešit neplatné vstupy a pořadí volání? | Rozhodnuto: `ga = gb = 0`, `update` před `backward` nic nezmění a trénovací $x$, $y$ se považují za platné. Otevřené: porušení předpokladů, platnost $\mathrm{lr}$ a přetečení. |
 
 Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhodnutí vlastníka. SGD je vhodné jako jednoduchý výchozí postup pro pozdější zkoumání učení neuronů; pro dvouparametrovou regresi lze jeho výsledek později porovnat s analytickým řešením. Jeho výběr zatím není důkazem lepší rychlosti ani paměťové úspory. Před implementací je třeba odsouhlasit otevřené detaily a akceptační kritéria.
 
@@ -254,3 +284,5 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **UML diagram:** Grafické znázornění modulů, jejich rozhraní a směru závislostí; šipka s plnou čarou zde vyjadřuje uložený ukazatel na model.
 - **Nevlastněný ukazatel:** Odkaz na existující `Regression` v `Optimizer`; optimalizátor model neuvolňuje a model musí po celou dobu odkazu existovat.
 - **Semínko generátoru:** Hodnota předaná `srand`, která na stejné implementaci určuje opakovatelnou posloupnost výsledků `rand`.
+- **Učicí sada:** Tři potvrzené dvojice kilometrů a mílí, z nichž bude prototyp upravovat parametry $a$ a $b$.
+- **Vstupní předpoklad:** Podmínka, kterou musí splnit volající; první prototyp předpokládá platné trénovací hodnoty bez průběžné kontroly.
