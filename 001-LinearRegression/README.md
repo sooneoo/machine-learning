@@ -63,4 +63,4 @@ třech dosud neviděných bodech; vypíší predikce a validační MSE.
 Dalších šest běhů vypisuje MSE celé sady po každé aktualizaci,
 počet zvýšení MSE a konečnou validační MSE. Specifikace obsahuje
 tabulky výsledků a grafy MSE po epochách včetně dlouhého běhu C.
-Závěr testování čeká na odsouhlasení vlastníkem.
+Závěr experimentu je odsouhlasen a experiment je uzavřen.

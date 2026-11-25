@@ -1,9 +1,8 @@
 # Specifikace experimentu lineární regrese
 
 - **Projekt:** `001-LinearRegression`
-- **Větev:** `experiment/001-linear-regression`
-- **Revize:** 29
-- **Stav závěru:** návrh k odsouhlasení vlastníkem
+- **Revize:** 30
+- **Stav závěru:** odsouhlasen; experiment uzavřen
 
 ## 1. Cíl
 
@@ -331,8 +330,8 @@ kolem minima při konstantní rychlosti učení. Výsledek
 neprokazuje obecnou převahu BGD, lepší validaci ani vyšší
 výpočetní výkon. Pro daný účel je implementace použitelná
 jako referenční model a kontrola výpočtu gradientů; přesnost
-na jiné úloze zatím není stanovena. **Závěr čeká na odsouhlasení
-vlastníkem.**
+na jiné úloze zatím není stanovena.
+**Závěr je odsouhlasen; experiment je uzavřen.**
 
 ## 11. Slovník
 
