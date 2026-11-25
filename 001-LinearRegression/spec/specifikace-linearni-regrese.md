@@ -5,7 +5,7 @@
 - **Stav dokumentu:** online i dávkový běh ověřen; společný závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 18
+- **Revize:** 19
 
 ## 1. Účel dokumentu
 
@@ -309,9 +309,10 @@ Online funkce pouze přijme `lr` jako argument, její volání
 zůstane zachováno. Dávková funkce v každé epoše jednou
 zavolá `optimizer_backward_batch` pro všechny tři body
 a pak jednou `optimizer_update`. Před aktualizací vypíše
-vrácenou MSE, po aktualizaci nové $a$ a $b$. Výstup bude
+vrácenou MSE, po aktualizaci nové $a$ a $b$. Výstup je
 označen metodou, `lr` a číslem epochy; online výstup nadále
-obsahuje jednotlivé body.
+obsahuje jednotlivé body. Po každém samostatném běhu runner
+vypíše prázdný řádek, který oddělí následující experiment.
 
 ```mermaid
 flowchart TD
@@ -368,7 +369,7 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-024 | Dávková ztráta a gradienty musí vzniknout jedním průchodem bez dynamické alokace; vstupní pole a počet jsou předpoklady volajícího. | Implementováno a ověřeno na obou platformách. |
 | LR-025 | Po dávkovém zpětném průchodu se musí použít stávající `optimizer_update`; původní online rozhraní a chování zůstává dostupné. | Implementováno a ověřeno na obou platformách. |
 | LR-026 | `main` musí spustit online a dávkovou variantu pro `lr = 0.01f` i `lr = 0.1f`; každý běh zvlášť nastaví seed 42 a provede deset epoch na stejných třech bodech. | Implementováno a ověřeno na obou platformách. |
-| LR-027 | Dávkový běh musí po každé epoše vypsat MSE před aktualizací a parametry po ní, s označením metody a `lr`. | Implementováno a ověřeno na obou platformách. |
+| LR-027 | Dávkový běh musí po každé epoše vypsat MSE před aktualizací a parametry po ní, s označením metody a `lr`; po každém experimentu runner vypíše prázdný oddělovací řádek. | Implementováno a ověřeno na obou platformách. |
 
 Kritéria konvergence a přesnosti parametrů se stanoví až z pozorovaných
 výsledků prvního běhu; identifikátory požadavků zůstanou stabilní.
@@ -393,7 +394,7 @@ Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodso
 | LR-T13 | LR-023, LR-024 | $a=b=0$, celá trojice z oddílu 2.3 | $L=875/192$, $g_a=-175/12$, $g_b=-15/4$; model se při `backward_batch` nezmění. | Splněno na obou platformách. |
 | LR-T14 | LR-023, LR-025 | Jednobodová dávka a referenční přímka $(0{,}625;0)$ | Pro jeden bod stejná ztráta a gradienty jako u online funkce; pro referenční přímku nulová MSE a gradienty. | Splněno na obou platformách. |
 | LR-T15 | LR-025 | Gradienty z LR-T13 a `lr = 0.01f` | Stávající `optimizer_update` nastaví $a=7/48$ a $b=0{,}0375$. | Splněno na obou platformách. |
-| LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 online a 10 dávkových kroků pro každé `lr`. | Splněno na obou platformách. |
+| LR-T16 | LR-026, LR-027 | `make exec` na obou platformách | Čtyři oddělené běhy, shodný počáteční model v každé dvojici na téže platformě, 30 online a 10 dávkových kroků pro každé `lr`, s prázdným řádkem po každém běhu. | Splněno na obou platformách. |
 
 Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T13 a LR-T15 pokrývá `test_batch_gradient_and_update`, LR-T14 `test_batch_single_and_reference`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12 a LR-T16 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
 

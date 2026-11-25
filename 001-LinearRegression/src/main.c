@@ -16,6 +16,7 @@ static void run_online_experiment(float lr) {
 
     printf("online: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
             " initial_b=%.9g\n", lr, epoch, model.a, model.b);
+
     for (size_t epoch_index = 0; epoch_index < epoch; epoch_index++) {
         for (size_t point_index = 0; point_index < point_count; point_index++) {
             /* The loss describes the model before this sample's update. */
@@ -26,7 +27,10 @@ static void run_online_experiment(float lr) {
                     epoch_index + 1, point_index + 1, loss, model.a, model.b);
         }
     }
+
+    putchar('\n');
 }
+
 
 static void run_batch_experiment(float lr) {
     srand(42);
@@ -39,13 +43,17 @@ static void run_batch_experiment(float lr) {
 
     printf("batch: seed=42 lr=%.9g epochs=%zu initial_a=%.9g"
             " initial_b=%.9g\n", lr, epoch, model.a, model.b);
+
     for (size_t epoch_index = 0; epoch_index < epoch; epoch_index++) {
         float mse = optimizer_backward_batch(&training, x, y, point_count);
         optimizer_update(&training, lr);
         printf("epoch=%zu mse_before=%.9g a=%.9g b=%.9g\n",
                 epoch_index + 1, mse, model.a, model.b);
     }
+
+    putchar('\n');
 }
+
 
 int main(void) {
     run_online_experiment(0.01f);

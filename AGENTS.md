@@ -19,6 +19,8 @@ This repository contains independent artificial intelligence research experiment
   }
   ```
 
+- Separate consecutive function definitions with two empty lines. Within a function, use one empty line between a group of variable declarations and the following control construct (`if`, `for`, `while`, or `switch`), and one empty line after a completed control construct before unrelated code continues. Keep adjacent declarations or statements that form one logical step together. Do not insert these separator lines between directly nested constructs, such as an `if` containing another `if` or `for`. Apply the same spacing to production code and tests.
+- When a command-line runner executes several separate experiments, print one empty line after each experiment to make their outputs visually distinct.
 - Keep a statement or expression on one line when it fits within 80 characters. Do not split short conditions, assignments, calls, or declarations merely for visual symmetry; wrap lines that would exceed 80 characters at a clear syntactic boundary.
 - When a statement or expression must wrap, indent its continuation lines two levels (eight spaces) beyond the statement's indentation. Continuations must sit deeper than the one-level-indented body so they cannot be mistaken for separate statements. Start a continued Boolean condition with `&&` or `||` on the new line. Keep the closing delimiter aligned with the statement. For example:
 

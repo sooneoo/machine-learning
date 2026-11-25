@@ -9,6 +9,7 @@ int main(void) {
     if (!test_run_suite(&test_suite_regression, &passed, &failed)) {
         failed++;
     }
+
     printf("\nTests: %zu, passed: %zu, failed: %zu\n",
             passed + failed, passed, failed);
     return failed == 0 ? 0 : 1;

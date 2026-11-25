@@ -7,11 +7,14 @@
 
 static bool close_float(float left, float right) {
     float difference = left - right;
+
     return difference > -0.000001f && difference < 0.000001f;
 }
 
+
 static bool test_forward(char *error, size_t error_size) {
     Regression model = {.a = 2.0f, .b = 1.0f};
+
     TEST_ASSERT(close_float(regression_forward(&model, 3.0f), 7.0f),
             "affine forward result");
     model.b = 0.0f;
@@ -25,6 +28,7 @@ static bool test_forward(char *error, size_t error_size) {
     return true;
 }
 
+
 static bool test_constructor(char *error, size_t error_size) {
     srand(42);
     Regression first = regression();
@@ -32,6 +36,7 @@ static bool test_constructor(char *error, size_t error_size) {
     srand(42);
     Regression repeated_first = regression();
     Regression repeated_second = regression();
+
     TEST_ASSERT(first.a >= -1.0f && first.a <= 1.0f,
             "first slope must be within range");
     TEST_ASSERT(first.b >= -1.0f && first.b <= 1.0f,
@@ -48,9 +53,11 @@ static bool test_constructor(char *error, size_t error_size) {
     return true;
 }
 
+
 static bool test_optimizer_initialization(char *error, size_t error_size) {
     Regression model = {.a = 0.5f, .b = -0.25f};
     Optimizer training = optimizer(&model);
+
     TEST_ASSERT(training.regression == &model, "optimizer must retain model");
     TEST_ASSERT(training.ga == 0.0f && training.gb == 0.0f,
             "initial gradients must be zero");
@@ -60,10 +67,12 @@ static bool test_optimizer_initialization(char *error, size_t error_size) {
     return true;
 }
 
+
 static bool test_backward_and_update(char *error, size_t error_size) {
     Regression model = {0};
     Optimizer training = optimizer(&model);
     float loss = optimizer_backward(&training, 2.0f, 1.0f);
+
     TEST_ASSERT(close_float(loss, 1.0f), "squared loss for one sample");
     TEST_ASSERT(close_float(training.ga, -4.0f), "slope gradient");
     TEST_ASSERT(close_float(training.gb, -2.0f), "intercept gradient");
@@ -75,22 +84,27 @@ static bool test_backward_and_update(char *error, size_t error_size) {
     return true;
 }
 
+
 static bool test_squared_loss_and_reference(char *error, size_t error_size) {
     Regression model = {0};
     Optimizer training = optimizer(&model);
     float first = optimizer_backward(&training, 1.0f, 1.0f);
     float second = optimizer_backward(&training, 3.0f, 2.0f);
+
     TEST_ASSERT(close_float((first + second) / 2.0f, 2.5f),
             "mean squared loss of two points");
     model = (Regression) {.a = 0.625f, .b = 0.0f};
     const float x[] = {1.0f, 3.0f, 5.0f};
     const float y[] = {0.625f, 1.875f, 3.125f};
+
     for (size_t index = 0; index < 3; index++) {
         TEST_ASSERT(optimizer_backward(&training, x[index], y[index]) == 0.0f,
                 "reference line must fit each training point");
     }
+
     return true;
 }
+
 
 static bool test_batch_gradient_and_update(char *error, size_t error_size) {
     Regression model = {0};
@@ -98,6 +112,7 @@ static bool test_batch_gradient_and_update(char *error, size_t error_size) {
     const float x[] = {1.0f, 3.0f, 5.0f};
     const float y[] = {0.625f, 1.875f, 3.125f};
     float mse = optimizer_backward_batch(&training, x, y, 3);
+
     TEST_ASSERT(close_float(mse, 875.0f / 192.0f), "batch MSE");
     TEST_ASSERT(close_float(training.ga, -175.0f / 12.0f),
             "mean slope gradient");
@@ -113,6 +128,7 @@ static bool test_batch_gradient_and_update(char *error, size_t error_size) {
     return true;
 }
 
+
 static bool test_batch_single_and_reference(char *error, size_t error_size) {
     Regression model = {0};
     Optimizer training = optimizer(&model);
@@ -122,18 +138,21 @@ static bool test_batch_single_and_reference(char *error, size_t error_size) {
     float online_ga = training.ga;
     float online_gb = training.gb;
     float batch_loss = optimizer_backward_batch(&training, x, y, 1);
+
     TEST_ASSERT(batch_loss == online_loss, "one sample loss");
     TEST_ASSERT(training.ga == online_ga && training.gb == online_gb,
             "one sample gradients");
     model = (Regression) {.a = 0.625f};
     const float all_x[] = {1.0f, 3.0f, 5.0f};
     const float all_y[] = {0.625f, 1.875f, 3.125f};
+
     TEST_ASSERT(optimizer_backward_batch(&training, all_x, all_y, 3)
             == 0.0f, "reference batch loss");
     TEST_ASSERT(training.ga == 0.0f && training.gb == 0.0f,
             "reference batch gradients");
     return true;
 }
+
 
 static const TestCase tests[] = {
     {"forward", test_forward},
@@ -144,6 +163,7 @@ static const TestCase tests[] = {
     {"batch gradient and update", test_batch_gradient_and_update},
     {"batch single and reference", test_batch_single_and_reference}
 };
+
 
 const TestSuite test_suite_regression = {
     .name = "linear regression",
