@@ -1,16 +1,17 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 8
+- **Revize:** 9
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
 ## 1. Cíl
 
-Navázat na lineární regresi a ověřit model jediného neuronu
-s libovolným počtem vstupů a odpovídajících vah. Sigmoidální
-aktivace mění afinní výpočet na nelineární výstup. První úlohou
-je naučit logickou funkci AND se dvěma binárními vstupy. Pro učení
+Navázat na lineární regresi a ověřit model jediného neuronu.
+Teoretický model připouští $n$ vstupů, ale tento experiment
+používá dvě váhy pro dva vstupy určené při překladu.
+Sigmoidální aktivace mění afinní výpočet na nelineární výstup.
+První úlohou je naučit logickou funkci AND se dvěma binárními vstupy. Pro učení
 volíme MSE; postup optimalizace a podmínky ověření ještě určíme.
 
 ## 2. Teorie konceptu
@@ -52,7 +53,8 @@ libovolný nelineární vztah.
 ## 3. Data a ztrátová funkce
 
 První úloha vychází z pravdivostní tabulky AND, tedy $n=2$
-vstupy a čtyři možné binární kombinace:
+vstupy a čtyři možné binární kombinace. Symbol $n$ značí
+počet vstupů neuronu, $N$ počet vzorků v dávce:
 
 | $x_1$ | $x_2$ | Cíl $y=x_1\land x_2$ |
 |---:|---:|---:|
@@ -80,28 +82,35 @@ blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
 pro návaznost na první experiment; binární křížovou entropii
 (BCE) zatím nepoužijeme.
 
-Kombinace rozdělíme na trénovací a validační množinu;
-konkrétní rozdělení ještě určíme. Validace proběhne až po
-tréninku a neovlivní parametry. Kvůli pouhým čtyřem možným
-binárním vstupům nepůjde z tohoto ověření vyvozovat širší
-zobecnění modelu.
+K trénování použijeme všechny čtyři binární kombinace,
+tedy $N=4$. Samostatnou validační množinu pro tuto úlohu
+nevytváříme. Závěrečné vyhodnocení na stejných datech
+ukáže naučení pravdivostní tabulky, nikoli zobecnění na
+neviděné vstupy.
 
 ## 4. Architektura programu
 
-Perceptron uchovává váhy a bias, počítá sigmoidální výstup
-a nezná optimalizátor. Optimizer používá model k výpočtu
-gradientů a aktualizaci parametrů. Runner v souboru main.c
-vytváří model a optimalizátor, řídí trénování a po něm
-samostatně vyhodnocuje validační množinu.
+Perceptron uchovává dvě váhy a bias, počítá sigmoidální
+výstup a nezná optimalizátor. Optimizer drží nevlastněný
+ukazatel na model, dva gradienty vah a gradient biasu;
+vypočtené gradienty použije při aktualizaci parametrů.
+Runner v souboru main.c vytváří oba objekty na zásobníku,
+řídí trénování a po něm vyhodnocuje celou tabulku AND.
 
 ```mermaid
 classDiagram
     direction LR
     class Runner
     class Optimizer {
+        +model
         +backward
+        +gw
+        +gb
     }
-    class Perceptron
+    class Perceptron {
+        +w
+        +b
+    }
     Runner ..> Perceptron : vytváří a vyhodnocuje
     Runner ..> Optimizer : volí funkci a řídí učení
     Optimizer ..> Perceptron : používá a upravuje
@@ -109,11 +118,17 @@ classDiagram
 
 Optimizer drží ukazatel `backward` na dávkovou funkci.
 Zvolená veřejná implementace spočítá hodnotu ztráty, její
-derivaci i gradienty všech vah a biasu. Ztrátu vrátí; gradienty
-zpřístupní Optimizeru pro následnou aktualizaci. První
-implementace používá MSE a BGD. Další ztrátová funkce
+derivaci i gradienty všech vah a biasu. Ztrátu vrátí;
+gradienty uloží do instance Optimizer pro následnou aktualizaci.
+První implementace používá MSE a BGD. Další ztrátová funkce
 může používat stejné volání z Runneru bez změny Perceptronu.
 Nepřímé volání proběhne jednou za dávku, nikoli pro každý vzorek.
+
+Pro tento běh mají struktury přímo pole `float w[2]`
+a `float gw[2]` a po jednom `float` pro bias a jeho
+gradient. Velikost je daná při překladu; jiný počet vstupů
+vyžaduje změnu velikosti polí a nový překlad. Konstrukce modelu ani optimalizátoru
+nevyžaduje dynamickou alokaci.
 
 Jednotné volání `optimizer_backward` zajistí krátká
 `static inline` funkce v hlavičce. Vyhodnotí ukazatel
@@ -187,19 +202,21 @@ kroky, pokud to zlepší výkon či numerickou stabilitu.
 ## 6. Metodika a diagnostika
 
 Runner provede BGD: v každé epoše zavolá `backward`
-nad trénovací dávkou, poté aktualizuje parametry. Stejně jako
-v experimentu 001 vypíše počáteční nastavení, pro každou
-epochu ztrátu před aktualizací a váhy s biasem po ní.
-Po poslední epoše vypíše pro každý validační vzorek vstupy,
-očekávaný a předpovězený výstup a nakonec validační MSE.
-Samostatné běhy oddělí prázdným řádkem.
+nad celou čtyřřádkovou trénovací dávkou, poté aktualizuje
+parametry. První pozorovací běh má 10 epoch a rychlost
+učení $\eta=0{,}01$. Stejně jako v experimentu 001 Runner
+vypíše počáteční nastavení, pro každou epochu ztrátu před
+aktualizací a váhy s biasem po ní. Po poslední epoše
+vypíše pro každou kombinaci AND vstupy, očekávaný a
+předpovězený výstup a nakonec MSE trénovací tabulky.
+Samostatné běhy oddělí prázdným řádkem. Deset epoch
+je počáteční pozorování, nikoli předpoklad dosažené přesnosti.
 
 ## 7. Otevřené návrhové otázky
 
-Před implementací společně určíme konkrétní rozdělení
-trénovacích a validačních dat, rozhraní dávky, uložení
-gradientů, inicializaci, klasifikační práh, rychlost učení
-a počet epoch. Pak doplníme měřitelné požadavky experimentu.
+Před implementací společně určíme rozhraní dávky,
+inicializaci, klasifikační práh a měřitelné požadavky
+experimentu.
 
 ## Slovník pojmů
 
