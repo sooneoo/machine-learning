@@ -32,6 +32,7 @@ This repository contains independent artificial intelligence research experiment
   }
   ```
 
+- Prepare Doxygen source documentation for every project and standalone library. Keep a `Doxyfile` in its root and add useful Doxygen comments to public types, functions, parameters, return values, ownership, preconditions, and non-obvious internal interfaces. Write source documentation comments in English and keep them consistent with the Czech project specification. Configure generated output under the project's ignored `.cache/` directory. Do not run Doxygen automatically during implementation, build, tests, or execution, and do not make it a prerequisite of ordinary Make targets. Generate the documentation only when the repository owner explicitly requests it; do not commit generated pages.
 - Keep `.c` source files and headers used by only one source file in `src/`. Put every header shared by multiple `.c` files, and every module's public interface, under `include/<logical-part>/`, for example `include/network/network.h`. Include shared headers by that logical path and avoid a flat `include/` layout.
 - Prefer automatic storage for data that fits on the stack. Prefer designated initializers and compound literals for new structs, especially in value-returning constructors. Initialize members that need nonzero values explicitly; C zero-initializes omitted members. For example:
 
