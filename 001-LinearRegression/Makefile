@@ -2,18 +2,28 @@ PLATFORM ?= linux_x86_64
 CACHE := .cache/$(PLATFORM)
 RELEASE := $(CACHE)/release
 TARGET := linear_regression
+MKDIR_CMD ?= mkdir -p
+CLEAN_CMD ?= rm -rf .cache
+DIR_PATH = $@
 
 .PHONY: all build test exec env clean
 all: build
 
 include config/$(PLATFORM).mk
 
-exec: build
-	$(RELEASE)/$(TARGET)
+test: $(TEST_OUTPUT)
+	$(TEST_OUTPUT)
 
-env:
-	mkdir -pv $(CACHE)
-	mkdir -pv $(RELEASE)
+exec: build
+	$(BIN_OUTPUT)
+
+env: $(CACHE) $(RELEASE)
+
+$(CACHE):
+	$(MKDIR_CMD) $(DIR_PATH)
+
+$(RELEASE): | $(CACHE)
+	$(MKDIR_CMD) $(DIR_PATH)
 
 clean:
-	rm -rvf .cache
+	$(CLEAN_CMD)

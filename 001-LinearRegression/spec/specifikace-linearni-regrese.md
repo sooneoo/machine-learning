@@ -2,16 +2,16 @@
 
 - **Projekt:** `001-LinearRegression`
 - **Větev:** `experiment/001-linear-regression`
-- **Stav dokumentu:** pracovní návrh prvního online běhu; implementace čeká na výslovné schválení vlastníkem
+- **Stav dokumentu:** implementovaný první online běh; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 12
+- **Revize:** 13
 
 ## 1. Účel dokumentu
 
-Experiment má ukázat, jak navrhnout a ověřit malý systém strojového učení v čistém C bez specializovaného frameworku. Model prokládá body v dvourozměrném grafu přímkou. Hlavním cílem první fáze je společně rozhodnout architekturu, způsob učení, ověřování a měření zdrojů před napsáním algoritmu.
+Experiment má ukázat, jak navrhnout a ověřit malý systém strojového učení v čistém C bez specializovaného frameworku. Model prokládá body v dvourozměrném grafu přímkou. První fáze ověřuje schválenou architekturu, způsob učení a pozorovatelnost výpočtu; měření výkonu a další varianty následují až po vyhodnocení tohoto běhu.
 
-Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od návrhů a otevřených rozhodnutí. Vlastník navrhl oddělení modelu od optimalizátoru, MSE a stochastický gradientní sestup (SGD). První pozorovací běh má pevné pořadí vzorků, deset epoch a rychlost učení $\eta=0{,}1$. Průběh a přesnost se vyhodnotí po spuštění.
+Dokument zaznamenává potvrzené předpoklady zadané vlastníkem odděleně od návrhů a otevřených rozhodnutí. Vlastník navrhl oddělení modelu od optimalizátoru, MSE a stochastický gradientní sestup (SGD). První pozorovací běh má pevné pořadí vzorků, deset epoch a rychlost učení $\eta=0{,}1$. Skutečný průběh prvního běhu a jeho omezení jsou vyhodnoceny v oddílu 10.
 
 ## 2. Rozsah a hranice
 
@@ -226,7 +226,7 @@ Optimizer training = optimizer(&model);
 
 Pro první verzi se předpokládají také konečné hodnoty parametrů, $x$ a $y$; trénovací data se průběžně nevalidují. Samotná afinní funkce může přijmout i záporné konečné $x$, přestože ukázková sada kilometrů obsahuje jen nezáporné vzdálenosti. První běh předpokládá konečné pevné $\mathrm{lr}=0{,}1$; běhová kontrola rychlosti učení ani numerického přetečení se neprovádí. Při výskytu nekonečna nebo `NaN` jej diagnostika pouze zaznamená a plánovaných deset epoch doběhne. Předpoklad platného `lr` je smlouvou volajícího také pro `optimizer_update`. Tento experiment dynamickou alokaci nepotřebuje; pro budoucí experimenty platí jednorázová kontrola výsledku `lib/alloc` bez opakovaného testování ukazatele v horké části algoritmu.
 
-Výchozí platformou je `linux_x86_64` a připravuje se `win32_x86_64`. `Makefile` a platformní konfigurace zatím nesmějí hlásit úspěšný build nebo test, protože implementace čeká na výslovné schválení vlastníkem.
+Implementace byla schválena vlastníkem dne 2026-11-25. Překlad a testy proběhly na `linux_x86_64` a `win32_x86_64`; objekty a programy jsou oddělené v `.cache/$(PLATFORM)/`.
 
 ## 6. Výpočetní optimalizace a paralelizace
 
@@ -244,10 +244,10 @@ U jednoduchého modelu se dvěma parametry může režie obecného frameworku ne
 | LR-004 | Produkční kód nesmí záviset na frameworku pro strojové učení. | Potvrzené pravidlo repozitáře. |
 | LR-005 | Jednotkové testy musí ověřit dopřednou funkci a později zvolenou metodu učení. | Potvrzené pravidlo repozitáře. |
 | LR-006 | Volba trénovacího algoritmu a akceptačních kritérií musí být schválena před jejich implementací. | Potvrzené pravidlo repozitáře. |
-| LR-007 | Překlad musí podporovat `linux_x86_64` a `win32_x86_64`. | Požadavek na připravovanou implementaci. |
+| LR-007 | Překlad musí podporovat `linux_x86_64` a `win32_x86_64`. | Ověřeno překladem a testy obou platforem. |
 | LR-008 | Modul regrese nesmí záviset na optimalizátoru; optimalizátor používá veřejné rozhraní regrese. | Potvrzená architektura. |
-| LR-009 | Ztráta pro $N>0$ bodů musí odpovídat MSE, tedy průměru druhých mocnin rozdílu $\hat y_i-y_i$. | Potvrzený výchozí směr; numerická smlouva se doplní. |
-| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzený výchozí směr; plán kroků se doplní. |
+| LR-009 | `optimizer_backward` musí pro jeden bod vrátit čtvercovou ztrátu; průměr těchto ztrát pro $N>0$ bodů odpovídá MSE. | Potvrzená numerická smlouva. |
+| LR-010 | SGD musí počítat gradient čtvercové ztráty vůči $a$ a $b$ a aktualizovat oba parametry v opačném směru. | Potvrzené online kroky po jednotlivých bodech. |
 | LR-011 | `Runner` v `src/main.c` musí koordinovat použití `Regression` a `Optimizer`; závislosti mezi moduly musí odpovídat diagramu v oddílu 5.3. | Potvrzená architektura. |
 | LR-012 | `regression()` musí vrátit hodnotovou strukturu s parametry v intervalu $[-1,1]$, získanými dvěma voláními `rand()` bez dynamické alokace. | Potvrzená architektura; numerické detaily se ověří. |
 | LR-013 | `Optimizer` musí obsahovat nevlastněný ukazatel na `Regression` a vlastní `float` gradienty `ga` a `gb`, inicializované na nulu; model musí žít déle než optimalizátor. | Potvrzená architektura. |
@@ -269,20 +269,20 @@ Závěry o použitelnosti budou navržené, dokud je vlastník výslovně neodso
 
 | ID | Požadavky | Vstup / podmínka | Očekávaný výsledek | Stav |
 |---|---|---|---|---|
-| LR-T01 | LR-001, LR-002 | $a=2$, $b=1$, $x=3$ | $\hat y=7$ | Plánováno; kód neexistuje. |
-| LR-T02 | LR-002, LR-003 | $a=2$, $b=0$, $x=3$ | $\hat y=6$ | Plánováno; kód neexistuje. |
-| LR-T03 | LR-002 | $a=-1$, $b=2$, $x=-2$ | $\hat y=4$ | Plánováno; kód neexistuje. |
-| LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Plánováno; kód neexistuje. |
-| LR-T05 | LR-010, LR-013, LR-014, LR-015 | $a=b=0$, $x=2$, $y=1$, $\mathrm{lr}=0{,}1$ | `backward` vrátí $e=1$ a uloží $g_a=-4$, $g_b=-2$ bez změny modelu; `update` nastaví $a'=0{,}4$, $b'=0{,}2$ | Plánováno; kód neexistuje. |
-| LR-T06 | LR-008, LR-011 | Kontrola závislostí zdrojových modulů | `Runner` používá model a optimalizátor; `Optimizer` používá model; `Regression` nemá závislost na zbývajících dvou modulech. | Plánováno; kód neexistuje. |
-| LR-T07 | LR-012 | Dvě volání `regression()` po `srand(seed)` s pevným semínkem | Oba parametry leží v $[-1,1]$; opakování se stejným semínkem na téže platformě vrátí stejnou dvojici modelů. | Plánováno; kód neexistuje. |
-| LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Plánováno; kód neexistuje. |
-| LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Plánováno; kód neexistuje. |
-| LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Teoretický očekávaný výsledek; kód neexistuje. |
-| LR-T11 | LR-013, LR-018, LR-019 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `run_online_experiment()`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Plánováno; kód neexistuje. |
-| LR-T12 | LR-019, LR-020, LR-021 | Spuštění online experimentu se seedem 42 | Přesně 30 výpisů v pořadí deseti epoch a tří bodů, se ztrátou před a parametry po každém kroku. | Plánováno po schválení implementace. |
+| LR-T01 | LR-001, LR-002 | $a=2$, $b=1$, $x=3$ | $\hat y=7$ | Splněno na obou platformách: test_forward. |
+| LR-T02 | LR-002, LR-003 | $a=2$, $b=0$, $x=3$ | $\hat y=6$ | Splněno na obou platformách: test_forward. |
+| LR-T03 | LR-002 | $a=-1$, $b=2$, $x=-2$ | $\hat y=4$ | Splněno na obou platformách: test_forward. |
+| LR-T04 | LR-009 | Dva body s rozdíly $\hat y_i-y_i$ rovnými $-1$ a $-2$ | $\operatorname{MSE}=\frac{1+4}{2}=2{,}5$ | Splněno na obou platformách: test_squared_loss_and_reference. |
+| LR-T05 | LR-010, LR-013, LR-014, LR-015 | $a=b=0$, $x=2$, $y=1$, $\mathrm{lr}=0{,}1$ | `backward` vrátí $e=1$ a uloží $g_a=-4$, $g_b=-2$ bez změny modelu; `update` nastaví $a'=0{,}4$, $b'=0{,}2$ | Splněno na obou platformách: test_backward_and_update. |
+| LR-T06 | LR-008, LR-011 | Kontrola závislostí zdrojových modulů | `Runner` používá model a optimalizátor; `Optimizer` používá model; `Regression` nemá závislost na zbývajících dvou modulech. | Ověřeno kontrolou závislostí a překladem na obou platformách. |
+| LR-T07 | LR-012 | Dvě volání `regression()` po `srand(seed)` s pevným semínkem | Oba parametry leží v $[-1,1]$; opakování se stejným semínkem na téže platformě vrátí stejnou dvojici modelů. | Splněno na obou platformách: test_constructor. |
+| LR-T08 | LR-013 | `Optimizer` vytvořený nad existujícím `Regression` | Uložený ukazatel směřuje na předaný model, `ga = gb = 0`; vytvoření nevyžaduje dynamickou alokaci. | Splněno na obou platformách: test_optimizer_initialization. |
+| LR-T09 | LR-013, LR-015 | `optimizer_update` volaný po konstrukci, před `optimizer_backward` | Parametry modelu se nezmění. | Splněno na obou platformách: test_optimizer_initialization. |
+| LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Splněno na obou platformách: test_squared_loss_and_reference. |
+| LR-T11 | LR-013, LR-018, LR-019 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `run_online_experiment()`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Ověřeno kontrolou zdrojového kódu a překladem. |
+| LR-T12 | LR-019, LR-020, LR-021 | Spuštění online experimentu se seedem 42 | Přesně 30 výpisů v pořadí deseti epoch a tří bodů, se ztrátou před a parametry po každém kroku. | Splněno na obou platformách: 30 řádků, správné pořadí, opakovatelný běh. |
 
-První integrační test ověří deset epoch a třicet jednotlivých aktualizací. Jednotkové testy zkontrolují jeden krok podle LR-T05 a zachování platných ukazatelů. Numerické výsledky celého běhu se zaznamenají jako pozorování, nikoli předem stanovená konvergence. Další testy reprodukovatelnosti, hraničních hodnot a výkonu se určí po prvním běhu. `tests/` bude používat sdílený `lib/unit` přes `#include "unit/unit.h"` a překladovou cestu k jeho `include/`. Cíl `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
+Jednotkové testy používají sdílený `lib/unit` a ověřují výpočty bez závislosti na konkrétních hodnotách `rand()` jiné platformy. `tests/test_regression.c` mapuje LR-T01 až LR-T03 na `test_forward`, LR-T04 a LR-T10 na `test_squared_loss_and_reference`, LR-T05 na `test_backward_and_update`, LR-T07 na `test_constructor` a LR-T08 až LR-T09 na `test_optimizer_initialization`. LR-T06 a LR-T11 jsou kontrolou zdrojového kódu, LR-T12 integračním spuštěním. Příkazy a výsledky jsou v oddílu 10.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -302,11 +302,83 @@ Oddělení modelu od optimalizátoru, MSE a SGD odpovídají nynějšímu rozhod
 
 ## 10. Výsledky testování a závěr
 
-Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algoritmus učení, numerická přesnost, rychlost ani spotřeba paměti proto nebyly ověřeny. Závěr o použitelnosti pro prokládání bodů nelze zatím formulovat ani odsouhlasit.
+Dne 2026-11-25 prošly z adresáře projektu příkazy
+`make PLATFORM=linux_x86_64 -j4 test build` v WSL Arch a
+`mingw32-make PLATFORM=win32_x86_64 -j4 test build` ve Windows.
+Na obou platformách prošlo všech pět jednotkových případů bez selhání.
+`make PLATFORM=linux_x86_64 exec` a
+`mingw32-make PLATFORM=win32_x86_64 exec` vypsaly přesně 30 kroků
+v pořadí deseti epoch a tří bodů. Opakované spuštění na každé platformě
+vrátilo stejný text. Překlad používal `-std=c11 -O2 -Wall -Wextra -Werror -pedantic`. Linux: GCC 16.2.1 (WSL Arch); Windows: MSYS2 GCC 16.2.0.
+Procesor: Intel Core i7-8565U. Síť ani externí modelové váhy se nepoužily.
 
-## 11. Vazba na připravovanou implementaci a údržba
+Následující tabulka ukazuje každou aktualizaci; čísla jsou zaokrouhlena
+na pět platných číslic. Ztráta je měřena **před** aktualizací daného bodu,
+parametry $a$ a $b$ jsou hodnoty **po** ní. Přesný výpis vrátí `make exec`.
+Počáteční model byl v Linuxu $(a,b)=(-0{,}93306011;-0{,}340071559)$,
+ve Windows $(-0{,}98931855;-0{,}975585222)$. Rozdíl je dán platformní
+implementací `rand()`.
 
-| Oblast | Plánovaná cesta |
+| Epocha | Bod | Linux: ztráta | Linux: $a$ | Linux: $b$ | Windows: ztráta | Windows: $a$ | Windows: $b$ |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 1 | 3.6029 | -0.55343 | 0.039555 | 6.7076 | -0.47134 | -0.4576 |
+| 1 | 2 | 12.22 | 1.544 | 0.7387 | 14.037 | 1.7766 | 0.29172 |
+| 1 | 3 | 28.449 | -3.7898 | -0.32805 | 36.601 | -4.2733 | -0.91826 |
+| 2 | 1 | 22.494 | -2.8412 | 0.62051 | 33.832 | -3.1099 | 0.24504 |
+| 2 | 2 | 95.611 | 3.0257 | 2.5761 | 120.12 | 3.4659 | 2.437 |
+| 2 | 3 | 212.56 | -11.554 | -0.33975 | 276.95 | -13.176 | -0.89133 |
+| 3 | 1 | 156.71 | -9.05 | 2.1639 | 215.86 | -10.237 | 2.0471 |
+| 3 | 2 | 721.52 | 7.0667 | 7.5362 | 932.68 | 8.0866 | 8.1551 |
+| 3 | 3 | 1579.6 | -32.678 | -0.41272 | 2066.9 | -37.376 | -0.93756 |
+| 4 | 1 | 1136.7 | -25.935 | 6.3304 | 1516.2 | -29.589 | 6.8503 |
+| 4 | 2 | 5380 | 18.075 | 21 | 7020.9 | 20.686 | 23.608 |
+| 4 | 3 | 11718 | -90.173 | -0.64943 | 15354 | -103.23 | -1.1741 |
+| 5 | 1 | 8362.7 | -71.884 | 17.64 | 11030 | -82.221 | 19.831 |
+| 5 | 2 | 39955 | 48.048 | 57.617 | 52307 | 55.004 | 65.573 |
+| 5 | 3 | 86867 | -246.68 | -1.3291 | 1.1388e+05 | -282.46 | -1.9203 |
+| 6 | 1 | 61821 | -196.96 | 48.399 | 81229 | -225.46 | 55.081 |
+| 6 | 2 | 2.9631e+05 | 129.65 | 157.27 | 3.8835e+05 | 148.44 | 179.72 |
+| 6 | 3 | 6.4384e+05 | -672.75 | -3.2118 | 8.4422e+05 | -770.37 | -4.0468 |
+| 7 | 1 | 4.5777e+05 | -537.43 | 132.1 | 6.0069e+05 | -615.36 | 150.96 |
+| 7 | 2 | 2.1965e+06 | 351.81 | 428.52 | 2.8798e+06 | 402.84 | 490.36 |
+| 7 | 3 | 4.7717e+06 | -1832.6 | -8.3676 | 6.2571e+06 | -2098.6 | -9.9234 |
+| 8 | 1 | 3.3915e+06 | -1464.3 | 359.95 | 4.4484e+06 | -1676.8 | 411.9 |
+| 8 | 2 | 1.628e+07 | 956.59 | 1166.9 | 2.1347e+07 | 1095.4 | 1336 |
+| 8 | 3 | 3.5364e+07 | -4990.1 | -22.431 | 4.6373e+07 | -5714.4 | -26.002 |
+| 9 | 1 | 2.5132e+07 | -3987.5 | 980.21 | 3.2959e+07 | -4566.2 | 1122.2 |
+| 9 | 2 | 1.2065e+08 | 2603 | 3177 | 1.5821e+08 | 2980.8 | 3637.8 |
+| 9 | 3 | 2.6208e+08 | -13586 | -60.742 | 3.4368e+08 | -15558 | -69.851 |
+| 10 | 1 | 1.8625e+08 | -10856 | 2668.7 | 2.4424e+08 | -12432 | 3055.8 |
+| 10 | 2 | 8.9417e+08 | 7085.1 | 8649.2 | 1.1725e+09 | 8113.3 | 9904.3 |
+| 10 | 3 | 1.9423e+09 | -36986 | -165.06 | 2.547e+09 | -42354 | -189.29 |
+
+Ztráta třetího bodu vzrostla v Linuxu z $28{,}4491615$ po první epoše
+na $1{,}94229811\cdot10^9$ v desáté; ve Windows z $36{,}6010818$ na
+$2{,}54699469\cdot10^9$. Obě posloupnosti se tedy při `lr = 0.1f`
+od referenčních parametrů vzdalují. To je v souladu s odvozením
+v oddílu 4: samotný krok na $x=5$ násobí jeho reziduum faktorem $-4{,}2$.
+Odvození vysvětluje riziko velkého kroku, ale nenahrazuje měření celé
+posloupnosti; v běhu se mezi opakováními bodu $x=5$ mění model i na
+ostatních dvou bodech.
+
+Známé hranice: jde o tři syntetické body, jednu rychlost učení a
+deset epoch. Není implementován dávkový běh, jiná rychlost učení,
+kontrola vstupů ani ochrana před numerickým přetečením.
+Nebylo měřeno finální MSE po posledním kroku, rychlost, spotřeba
+paměti ani srovnání s frameworkem. Z testů nelze vyvozovat obecnou
+vlastnost SGD ani chování mimo tuto učicí sadu.
+
+**Navržený závěr k odsouhlasení:** Implementace správně vykonává
+schválené online kroky a poskytuje opakovatelný průběh na každé
+platformě. Pro proložení zadaných bodů je tato konfigurace
+`lr = 0.1f` po deseti epochách nepoužitelná, protože pozorovaná
+ztráta prudce roste. Experiment je použitelný jako základ pro
+zkoumání vlivu rychlosti učení a pozdější srovnání s dávkovou
+aktualizací. Závěr zatím **není odsouhlasen vlastníkem**.
+
+## 11. Vazba na implementaci a údržba
+
+| Oblast | Zdrojový soubor |
 |---|---|
 | Vstupní bod a řízení experimentu | `src/main.c` |
 | Veřejný model a dopředný výpočet | `include/regression/regression.h`, `src/regression.c` |
@@ -315,7 +387,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
 | Překlad pro Windows | `config/win32_x86_64.mk` |
 
-Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Po výslovném schválení zahájení implementace se stav dokumentu upraví a začnou se vytvářet odpovídající moduly a testy.
+Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akceptačních kritérií musí být nejprve promítnuta do této specifikace. Další změna trénovací strategie, zejména dávkový běh, se nejprve upřesní ve specifikaci a projde společným rozhodnutím podle kořenového `AGENTS.md`.
 
 ## 12. Vysvětlující slovník odborných pojmů
 

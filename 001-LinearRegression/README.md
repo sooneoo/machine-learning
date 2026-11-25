@@ -1,9 +1,37 @@
 # 001-LinearRegression
 
-První výzkumný experiment se skalární lineární regresí v C. Projekt je ve fázi přípravy návrhu; trénovací algoritmus ani zdrojový kód modelu dosud nejsou implementovány.
+První experiment se skalární lineární regresí v čistém C.
+`Regression` počítá $\hat y=ax+b$, `Optimizer` provádí SGD po
+jednotlivých bodech a `run_online_experiment()` v `src/main.c` řídí
+deset epoch nad třemi body zjednodušeného převodu kilometrů na míle.
 
-Pracovní návrh, potvrzené předpoklady a otevřená rozhodnutí jsou v [české specifikaci](spec/specifikace-linearni-regrese.md). Implementace začne až po společném dokončení specifikace.
+Architektura, rovnice, akceptační scénáře, skutečné výsledky všech
+30 kroků a navržený závěr jsou v
+[české specifikaci](spec/specifikace-linearni-regrese.md).
 
-Adresáře `src/`, `include/regression/` a `tests/` jsou zatím prázdné. `Makefile` a konfigurace `config/linux_x86_64.mk` a `config/win32_x86_64.mk` tvoří pouze strukturu. Cíle `build` a `test` na obou platformách záměrně skončí chybou, dokud nevznikne schválená implementace a jednotkové testy. Větev experimentu je `experiment/001-linear-regression`.
+## Překlad a spuštění
 
-Sdílené hlavičky budou při překladu dostupné přes `LIB_ROOT`: `#include "alloc/alloc.h"` a `#include "unit/unit.h"`. Při přesunu knihoven se mění `LIB_ROOT`, nikoli zdrojové kódy.
+Linux x86-64:
+
+```sh
+make PLATFORM=linux_x86_64 test
+make PLATFORM=linux_x86_64 exec
+```
+
+Windows x86-64 s MSYS2 MinGW-w64:
+
+```powershell
+mingw32-make PLATFORM=win32_x86_64 test
+mingw32-make PLATFORM=win32_x86_64 exec
+```
+
+`test` používá sdílené `lib/unit`; produkční program tuto knihovnu
+nelinkuje. Cesty k hlavičkám jsou v platformních konfiguracích přes
+`LIB_ROOT`. Přesun knihoven vyžaduje změnu překladové cesty, nikoli
+direktiv `#include`. Výstupy platforem se ukládají odděleně do
+`.cache/<platform>/`.
+
+První běh používá seed 42 a `lr = 0.1f`. Vypisuje po každém bodu ztrátu
+před aktualizací a parametry po ní. Pozorovaná ztráta prudce roste;
+závěr o použitelnosti konfigurace je ve specifikaci stále jen návrhem.
+Varianty s jiným `lr` a s dávkami se teprve navrhnou.
