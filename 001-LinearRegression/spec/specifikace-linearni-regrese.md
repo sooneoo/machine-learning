@@ -5,7 +5,7 @@
 - **Stav dokumentu:** implementovaný první online běh; závěr testování čeká na odsouhlasení vlastníkem
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 15
+- **Revize:** 16
 
 ## 1. Účel dokumentu
 
@@ -405,6 +405,10 @@ vedlo za stejných podmínek k poklesu celkové ztráty. Odvození
 faktoru $0{,}48$ pro jeden krok na $x=5$ je s tím slučitelné,
 ale samo o sobě nezaručuje pokles MSE po celé epoše.
 
+![Vývoj MSE po epochách pro dvě rychlosti učení na Linuxu a Windows](graf-vyvoje-mse.svg)
+
+**Obrázek 1:** MSE celé učicí sady po každé epoše v mílích na druhou. Svislá osa je logaritmická; plná čára označuje Linux a přerušovaná Windows. Červeně je $\eta=0{,}1$, modře $\eta=0{,}01$. Hodnoty pro $0{,}1$ byly odvozeny z parametrů zaokrouhlených v tabulce výše na pět platných číslic, hodnoty pro $0{,}01$ pocházejí z tabulky v tomto oddílu. Graf je proto přibližný a zobrazuje MSE po epoše, nikoli jednotlivé `loss_before`.
+
 **Hypotéza vlastníka k ověření:** Dočasné zvýšení ztráty jednotlivého
 bodu souvisí s tím, že online SGD aktualizuje model po každém vzorku,
 bez výpočtu gradientu nad celou dávkou. Tato příčina zatím nebyla
@@ -481,3 +485,4 @@ Změna modelové rovnice, podpisu, metody učení, numerické smlouvy nebo akcep
 - **Přestřelení minima:** Příliš velký krok, který na bodu $x=5$ překročí oblast nižší ztráty a obrátí znaménko rezidua.
 - **Divergence:** Růst chyby při opakovaných krocích; při `lr = 0.1f` se v tomto běhu zvětšovala ztráta bodu $x=5$.
 - **MSE po epoše:** Průměr čtvercových chyb všech tří bodů vyhodnocených se stejnými parametry po dokončení epochy.
+- **Logaritmická osa:** Stupnice grafu, na níž stejný krok znamená stejný násobek MSE; umožňuje zobrazit rostoucí i klesající běh v jednom obrázku.
