@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 4
+- **Revize:** 5
 - **Stav:** rozpracovaný návrh; implementace nebyla schválena
 - **Zvolená aktivační funkce:** sigmoida
 
@@ -9,8 +9,9 @@
 
 Navázat na lineární regresi a ověřit model jediného neuronu
 s libovolným počtem vstupů a odpovídajících vah. Sigmoidální
-aktivace mění afinní výpočet na nelineární výstup. Konkrétní
-úlohu a podmínky ověření ještě společně určíme.
+aktivace mění afinní výpočet na nelineární výstup. První úlohou
+je naučit logickou funkci AND se dvěma binárními vstupy. Pro učení
+volíme MSE; postup optimalizace a podmínky ověření ještě určíme.
 
 ## 2. Teorie konceptu
 
@@ -48,7 +49,42 @@ tvaru S a leží mezi $0$ a $1$. Pro více vstupů se mění
 $z$ podle váženého součtu; jeden neuron stále neumí vyjádřit
 libovolný nelineární vztah.
 
-## 3. Průchod jedním neuronem
+## 3. Data a ztrátová funkce
+
+První úloha používá úplnou pravdivostní tabulku AND, tedy $n=2$
+vstupy a $N=4$ vzorky:
+
+| $x_1$ | $x_2$ | Cíl $y=x_1\land x_2$ |
+|---:|---:|---:|
+| 0 | 0 | 0 |
+| 0 | 1 | 0 |
+| 1 | 0 | 0 |
+| 1 | 1 | 1 |
+
+Pro tyto vzorky volíme střední kvadratickou chybu
+
+$$
+\operatorname{MSE}(\mathbf{w},b)
+=\frac{1}{N}\sum_{k=1}^{N}(\hat y_k-y_k)^2,
+\qquad
+\hat y_k=\sigma\!\left(
+  \sum_{i=1}^{n}w_i x_{k,i}+b
+\right).
+$$
+
+AND je lineárně separovatelná: jediný neuron může po zavedení
+rozhodovacího prahu rozlišit všechny čtyři kombinace. Sigmoida
+zajišťuje hladký, diferencovatelný výstup, ale pro konečné
+parametry nikdy nevrátí přesně $0$ ani $1$; MSE se proto může
+blížit nule, aniž by jí přesně dosáhla. Ztrátu MSE volíme
+pro návaznost na první experiment; binární křížovou entropii
+(BCE) zatím nepoužijeme.
+
+Úplná tabulka nemá další dosud neviděnou binární kombinaci.
+Ověření správnosti AND proto odlišíme od tvrzení o zobecnění
+na jiná data.
+
+## 4. Průchod jedním neuronem
 
 ```mermaid
 flowchart LR
@@ -61,7 +97,7 @@ flowchart LR
 Konkrétní programové rozhraní a vlastnictví dat zatím nejsou
 určeny.
 
-## 4. Gradient a řetězcové pravidlo
+## 5. Gradient a řetězcové pravidlo
 
 Pro diferencovatelnou ztrátu $L(\hat y,y)$ na jednom vzorku
 platí
@@ -90,15 +126,31 @@ $$
  \sigma(z)\bigl(1-\sigma(z)\bigr).
 $$
 
-Tvar členu $\frac{\partial L}{\partial\hat y}$ určíme
-až po výběru ztrátové funkce. V blízkosti nasycení sigmoidy
-se $\sigma'(z)$ blíží nule, takže se může učení zpomalit.
+Pro zvolenou MSE celé tabulky je výsledkem
 
-## 5. Otevřené návrhové otázky
+$$
+\frac{\partial\operatorname{MSE}}{\partial w_i}
+=\frac{2}{N}\sum_{k=1}^{N}
+(\hat y_k-y_k)\hat y_k(1-\hat y_k)x_{k,i},
+\qquad i=1,\ldots,n,
+$$
 
-Před implementací společně určíme data, ztrátovou funkci,
-optimalizaci, rozhraní a způsob ověření. Následně doplníme
-metodiku a měřitelné podmínky experimentu.
+$$
+\frac{\partial\operatorname{MSE}}{\partial b}
+=\frac{2}{N}\sum_{k=1}^{N}
+(\hat y_k-y_k)\hat y_k(1-\hat y_k).
+$$
+
+V blízkosti nasycení sigmoidy se její derivace blíží nule,
+takže MSE může při nevhodném počátečním nastavení učit pomalu.
+Zda budeme gradient vyhodnocovat po vzorcích nebo po celé
+tabulce, zatím není rozhodnuto.
+
+## 6. Otevřené návrhové otázky
+
+Před implementací společně určíme optimalizaci, inicializaci,
+rozhraní, klasifikační práh a podmínky ověření. Následně
+doplníme metodiku a měřitelné požadavky experimentu.
 
 ## Slovník pojmů
 
@@ -114,3 +166,13 @@ metodiku a měřitelné podmínky experimentu.
   aktivace či rychlost učení, která se neurčuje gradientem vah.
 - **Řetězcové pravidlo:** způsob derivace složené funkce; zde
   propojuje derivaci ztráty, sigmoidy a váženého součtu.
+- **MSE:** průměr čtverců rozdílů mezi výstupy neuronu a cíli
+  čtyř kombinací AND.
+- **Lineární separovatelnost:** možnost oddělit kombinaci
+  $(1,1)$ od ostatních kombinací AND afinní rozhodovací hranicí.
+- **Rozhodovací práh:** mez, která převede spojitý výstup
+  sigmoidy na jednu ze dvou tříd.
+- **Nasycení sigmoidy:** oblast výstupu blízko $0$ či $1$,
+  kde je derivace aktivační funkce malá.
+- **BCE:** binární křížová entropie, alternativní ztráta pro
+  binární cíle, kterou zatím nepoužijeme.
