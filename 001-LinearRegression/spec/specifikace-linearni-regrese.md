@@ -5,7 +5,7 @@
 - **Stav dokumentu:** pracovní návrh; MSE a SGD jsou zvoleny jako výchozí směr, podrobnosti učení a akceptace čekají na společný brainstorming
 - **Zdroj pravdy:** tento Markdown soubor
 - **Datum:** 2026-11-25
-- **Revize:** 10
+- **Revize:** 11
 
 ## 1. Účel dokumentu
 
@@ -238,7 +238,7 @@ Požadavky na konvergenci, přesnost parametrů, chování při porušení vstup
 | LR-T10 | LR-016 | Tři dvojice z oddílu 2.3 a referenční parametry $a=0{,}625$, $b=0$ | Všechny tři odhady se rovnají cílům a $\operatorname{MSE}=0$. | Teoretický očekávaný výsledek; kód neexistuje. |
 | LR-T11 | LR-013, LR-018 | Kontrola `src/main.c` a volání modelu/optimalizátoru | Obě struktury jsou lokální v `main`, `Optimizer` drží adresu živého modelu a horké funkce neobsahují opakované kontroly `NULL`. | Plánováno; kód neexistuje. |
 
-Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat projektový adaptovaný `unit.c`/`unit.h` a `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
+Další testy učení, reprodukovatelnosti, hraničních hodnot a výkonu budou určeny po upřesnění postupu SGD a dat. `tests/` bude používat sdílený `lib/unit` přes `#include "unit/unit.h"` a překladovou cestu k jeho `include/`. Cíl `make test` bude vracet chybu při selhání. Pro podporovanou platformu se zaznamenají skutečné příkazy, hardware a výsledky. Po implementaci se ověří sestavení a jednotkové testy pro Linux a Windows; samotné načtení konfiguračního souboru není ověřením překladu. Nyní nic z toho nelze vykazovat jako provedený test.
 
 ## 9. Rozhodnutí a otevřené otázky pro brainstorming
 
@@ -267,7 +267,7 @@ Neexistuje implementace ani jednotkové testy tohoto experimentu. Žádný algor
 | Vstupní bod a řízení experimentu | `src/main.c` |
 | Veřejný model a dopředný výpočet | `include/regression/regression.h`, `src/regression.c` |
 | Ztráta a učení parametrů | `include/regression/optimizer.h`, `src/optimizer.c` |
-| Jednotkové testy | `tests/test_regression.c`, `tests/unit.c`, `tests/unit.h`, `tests/main.c` |
+| Jednotkové testy | `tests/test_regression.c`, `tests/main.c`, `../lib/unit/src/unit.c`, `../lib/unit/include/unit/unit.h` |
 | Překlad pro výchozí platformu | `Makefile`, `config/linux_x86_64.mk` |
 | Překlad pro Windows | `config/win32_x86_64.mk` |
 

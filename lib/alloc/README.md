@@ -1,6 +1,6 @@
 # alloc
 
-Small C11 allocator library for experiments that need dynamic memory without `malloc`, `calloc`, or `free`. It provides a stack allocator backed by caller-owned storage and an arena backed by OS virtual memory. The API is in `include/alloc/`; `include/alloc/pages.h` is an internal interface shared by the arena and its platform implementations.
+Small C11 allocator library for experiments that need dynamic memory without `malloc`, `calloc`, or `free`. It provides a stack allocator backed by caller-owned storage and an arena backed by OS virtual memory. The API is in `include/alloc/`; consumers add its parent `include/` to `-I`, so `#include "alloc/alloc.h"` remains stable if the library moves. `include/alloc/pages.h` is an internal interface shared by the arena and its platform implementations.
 
 The normative architecture, allocator theory, acceptance scenarios, observed results, and proposed testing conclusion are in [the library specification](spec/specifikace-alloc.md).
 
@@ -59,6 +59,6 @@ mingw32-make PLATFORM=win32_x86_64 -j4 test
 mingw32-make PLATFORM=win32_x86_64 clean
 ```
 
-`build` creates `.cache/<platform>/release/liballoc.a`; `test` builds and runs the five-case unit suite based on the supplied `unit.c`/`unit.h` pattern. `exec` is an alias for `test`. The platform configuration selects exactly one OS memory implementation. On 2026-11-24, all five cases passed with the Windows MSYS2 toolchain and with GCC in WSL Arch. The Linux suite also passed under AddressSanitizer and UndefinedBehaviorSanitizer. The checks cover alignment, LIFO deletion, in-place and moving resize, content preservation, reset, failure paths, and finalization. No performance or memory comparison with a system allocator or Python framework has been run.
+`build` creates `.cache/<platform>/release/liballoc.a`; `test` builds and runs the five-case unit suite using the shared `lib/unit` helper. `exec` is an alias for `test`. The platform configuration selects exactly one OS memory implementation. On 2026-11-25, the shared-helper build again passed all five cases on Windows and WSL Arch. On 2026-11-24, all five cases passed with the Windows MSYS2 toolchain and with GCC in WSL Arch. The Linux suite also passed under AddressSanitizer and UndefinedBehaviorSanitizer. The checks cover alignment, LIFO deletion, in-place and moving resize, content preservation, reset, failure paths, and finalization. No performance or memory comparison with a system allocator or Python framework has been run.
 
 This library allocates host memory on Linux and Windows. CUDA device memory needs a separate accelerator-specific interface when a GPU experiment requires it; it is not covered by these builds or tests.

@@ -3,8 +3,8 @@
 - **Projekt:** `lib/alloc`
 - **Stav dokumentu:** návrh specifikace; závěr testování čeká na odsouhlasení
 - **Zdroj pravdy:** tento Markdown soubor
-- **Datum:** 2026-11-24
-- **Revize:** 1
+- **Datum:** 2026-11-25
+- **Revize:** 2
 
 ## 1. Účel a hranice
 
@@ -98,7 +98,7 @@ Vstupy testu jsou pevné bajtové vzory a velikosti z `tests/test_alloc.c`; nepo
 
 ## 9. Skutečné výsledky a interpretace
 
-Dne 2026-11-24 prošel `mingw32-make PLATFORM=win32_x86_64 -j4 test` na Windows s MSYS2 MinGW-w64 GCC a `make -j4 test` v Linuxu WSL Arch. Obě sady vypsaly `5 passed, 0 failed`. Samostatný linuxový překlad a běh stejné sady s `-fsanitize=address,undefined` také prošel bez hlášení sanitizerů. Sestavení používá `-Wall -Wextra -Werror -pedantic`.
+Dne 2026-11-25 prošly testy se sdíleným modulem `lib/unit` znovu na Windows a v Linuxu WSL Arch; obě sady vykázaly pět úspěchů a žádné selhání. Dne 2026-11-24 prošel `mingw32-make PLATFORM=win32_x86_64 -j4 test` na Windows s MSYS2 MinGW-w64 GCC a `make -j4 test` v Linuxu WSL Arch. Obě sady vypsaly `5 passed, 0 failed`. Samostatný linuxový překlad a běh stejné sady s `-fsanitize=address,undefined` také prošel bez hlášení sanitizerů. Sestavení používá `-Wall -Wextra -Werror -pedantic`.
 
 Pozorování podporují správné zarovnání, LIFO smlouvu, kopírování při přesunu bloku a reset na testovaných vstupech. Neprokazují bezpečnost při souběžném přístupu, chování pro libovolný chybný ukazatel ani výkonnost proti systémovému alokátoru.
 
@@ -119,10 +119,12 @@ Pozorování podporují správné zarovnání, LIFO smlouvu, kopírování při 
 | Zásobníkový alokátor | `src/stack.c` |
 | Arena a OS rozhraní | `src/arena.c`, `include/alloc/pages.h` |
 | Platformní paměť | `src/pages_linux_x86_64.c`, `src/pages_win32_x86_64.c` |
-| Akceptační testy | `tests/test_alloc.c`, `tests/unit.c`, `tests/main.c` |
+| Akceptační testy | `tests/test_alloc.c`, `tests/main.c`, `../unit/src/unit.c`, `../unit/include/unit/unit.h` |
 | Překlad | `Makefile`, `config/linux_x86_64.mk`, `config/win32_x86_64.mk` |
 
 Každá změna vlastnictví, zarovnání, chování `resize`/`reset`, OS vrstvy nebo podporovaných platforem musí změnit tuto specifikaci a příslušné testy. Potvrzené odchylky se uchovají do opravy. Závěr se označí jako odsouhlasený až po výslovné shodě s vlastníkem.
+
+Hlavičky knihovny se překládají s `-Iinclude`; sdílený testovací modul s `-I../unit/include`. Přesun knihovny vyžaduje změnu překladové cesty, nikoli logických názvů v direktivách `#include`. Testovací modul se nepřipojuje k produkčnímu archivu.
 
 ## 12. Vysvětlující slovník odborných pojmů
 

@@ -1,6 +1,7 @@
+LIB_ROOT ?= ..
 CC = gcc
 AR = ar
-CFLAGS += -std=c11 -O2 -Wall -Wextra -Werror -pedantic -D_DEFAULT_SOURCE -Iinclude
+CFLAGS += -std=c11 -O2 -Wall -Wextra -Werror -pedantic -D_DEFAULT_SOURCE -Iinclude -I$(LIB_ROOT)/unit/include
 OBJ := $(CACHE)/stack.o $(CACHE)/arena.o $(CACHE)/pages_linux_x86_64.o
 LIB_OUTPUT := $(RELEASE)/liballoc.a
 TEST_OUTPUT := $(RELEASE)/alloc_test
@@ -23,11 +24,11 @@ $(CACHE)/arena.o: src/arena.c include/alloc/arena.h include/alloc/pages.h includ
 $(CACHE)/pages_linux_x86_64.o: src/pages_linux_x86_64.c include/alloc/pages.h | env
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(CACHE)/test_main.o: tests/main.c tests/unit.h | env
+$(CACHE)/test_main.o: tests/main.c $(LIB_ROOT)/unit/include/unit/unit.h | env
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(CACHE)/test_alloc.o: tests/test_alloc.c tests/unit.h include/alloc/alloc.h include/alloc/arena.h include/alloc/stack.h | env
+$(CACHE)/test_alloc.o: tests/test_alloc.c $(LIB_ROOT)/unit/include/unit/unit.h include/alloc/alloc.h include/alloc/arena.h include/alloc/stack.h | env
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(CACHE)/unit.o: tests/unit.c tests/unit.h | env
+$(CACHE)/unit.o: $(LIB_ROOT)/unit/src/unit.c $(LIB_ROOT)/unit/include/unit/unit.h | env
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -1,5 +1,5 @@
-#ifndef TESTS_UNIT_H
-#define TESTS_UNIT_H
+#ifndef UNIT_UNIT_H
+#define UNIT_UNIT_H
 
 #include <stdbool.h>
 #include <stddef.h>

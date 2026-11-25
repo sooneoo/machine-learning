@@ -1,8 +1,8 @@
-#include "unit.h"
+#include "unit/unit.h"
 
 bool test_run_suite(const TestSuite *suite, size_t *passed, size_t *failed) {
-    if (suite == NULL || passed == NULL || failed == NULL ||
-        (suite->tests == NULL && suite->test_count != 0)) {
+    if (suite == NULL || passed == NULL || failed == NULL
+            || (suite->tests == NULL && suite->test_count != 0)) {
         return false;
     }
 
