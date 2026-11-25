@@ -41,7 +41,7 @@ This repository contains independent artificial intelligence research experiment
   }
   ```
 
-  This leaves `ga` and `gb` at zero without separate assignments. Use assignments when changing an existing object or when construction requires ordered steps. Make ownership and lifetime clear to the caller; verify any performance advantage by measurement.
+  This leaves `ga` and `gb` at zero without separate assignments. The main benefit is shorter, clearer source code with initialization in one place. Use assignments when changing an existing object or when construction requires ordered steps. Make ownership and lifetime clear to the caller; do not claim a performance advantage without measurement.
 - Route dynamic allocations through `lib/alloc` and its `alloc_` API. Do not call `malloc`, `calloc`, `realloc`, or `free` in experiment code. Use the caller-backed stack allocator for bounded temporary data and the OS-backed arena for longer-lived or larger data. Check allocation failures, respect reset/finalize lifetimes, and keep platform memory acquisition inside the allocator HAL.
 - Keep platform-independent algorithms separate from operating system and accelerator code. Expose platform-specific operations through a small HAL interface in a header. Put each implementation in a file suffixed with its exact platform name, for example `src/hal_linux_x86_64.c` or `src/hal_win32_x86_64.c`. Do not scatter platform `#ifdef` branches through the algorithm.
 
