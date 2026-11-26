@@ -13,9 +13,16 @@ architekturu trénování o výpočet a ukládání gradientů více vrstev.
 Rychlost a spotřebu paměti měřit na stejných datech, přesnosti a hardwaru
 jako případný referenční program, než z nich vyvodíme závěr.
 
+Ověřovací úlohou je logická funkce XOR, kterou jediný neuron s afinním
+vstupem a rozhodovacím prahem nedokáže klasifikovat na všech čtyřech
+binárních vstupech. AND slouží jako kontrolní úloha navazující na
+experiment 002. Analytické gradienty porovnáme s numerickými aproximacemi
+a trénování ověříme na pravdivostní tabulce XOR. Úspěch na této tabulce
+sám o sobě nedokládá zobecnění na neviděná data.
+
 Potvrzené volby jsou aktivace ReLU a střední kvadratická chyba (MSE),
-stejně jako v běhu ReLU experimentu `002-perceptron`. Konkrétní úloha,
-tvar modelu, způsob inicializace a kritérium úspěchu zůstávají otevřené.
+stejně jako v běhu ReLU experimentu `002-perceptron`. Tvar modelu,
+způsob inicializace a měřitelné kritérium úspěchu zůstávají otevřené.
 První verze cílí na Linux x86-64.
 
 ## Konceptuální matematika
@@ -88,6 +95,8 @@ predikci, optimalizátor počítá gradient a mění parametry. Přesné rozhran
 vlastnictví pracovních polí a způsob popisu rozměrů vrstev zatím nejsou
 určené. Knihovna `lib/alloc` je dostupná pro pracovní paměť, která se
 nevejde na zásobník.
+Při návrhu rozhraní budeme hodnotit závislost programu na konkrétní
+topologii, aktivaci a ztrátě spolu s cenou případné obecnosti.
 
 ```mermaid
 classDiagram
@@ -113,7 +122,7 @@ classDiagram
 | Aktivace celé dávky v pracovních polích | Vhodné pro porovnání dávkových výpočtů | Paměť roste s velikostí dávky; potenciál pro lepší využití procesoru až po měření | Složitější indexování a správa pracovních polí |
 
 Žádná varianta dosud není vybrána. Před implementací je potřeba určit
-úlohu a data, topologii, přesnost čísel, inicializaci,
+topologii, přesnost čísel, inicializaci,
 režim dávky a způsob uložení parametrů i mezivýsledků. Volba ovlivní
 testy gradientů, případnou referenční implementaci a měření.
 
@@ -124,7 +133,7 @@ testy gradientů, případnou referenční implementaci a měření.
   zvolené aktivace diferencovatelné.
 - Test aktualizace parametrů, rozměrů a selhání alokace podle vybrané
   architektury.
-- Měření výsledné ztráty na zvolené úloze a času i vrcholové paměti
+- Měření výsledné ztráty na XOR a času i vrcholové paměti
   za reprodukovatelných podmínek.
 
 ## Závěr
