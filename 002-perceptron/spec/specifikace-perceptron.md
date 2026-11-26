@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 23
+- **Revize:** 24
 - **Stav:** dokončeno
 - **Porovnávané aktivace:** sigmoida a ReLU
 
@@ -409,6 +409,10 @@ omezen na $[0,1]$; sigmoida omezený výstup má.
 Vyhodnocení navíc používá jen trénovací tabulku.
 Sekundární zjištění o riziku neaktivní ReLU platí
 pro podmínky tohoto experimentu.
+
+Zjednodušení volby aktivační a ztrátové funkce v rozhraní
+modulů Perceptron a Optimizer patří navazujícím
+experimentům.
 
 ## 11. Vazba na zdrojový kód
 
