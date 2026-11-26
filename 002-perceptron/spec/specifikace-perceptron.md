@@ -1,8 +1,8 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 21
-- **Stav:** tři běhy implementovány; závěry odsouhlaseny
+- **Revize:** 22
+- **Stav:** dokončeno
 - **Porovnávané aktivace:** sigmoida a ReLU
 
 ## 1. Cíl
@@ -380,7 +380,7 @@ váhy nebo biasu. Z tohoto běhu neplyne obecný zákaz
 záporné inicializace ani četnost takového uvíznutí
 pro jiné úlohy.
 
-## 10. Odsouhlasený závěr
+## 10. Závěr
 
 Pro přesnou tabulku AND na čtyřech binárních vstupech
 má ReLU reprezentační výhodu: konečné parametry
