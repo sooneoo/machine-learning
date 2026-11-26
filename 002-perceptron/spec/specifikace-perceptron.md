@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 19
+- **Revize:** 20
 - **Stav:** tři běhy implementovány; závěr srovnání čeká na odsouhlasení
 - **Porovnávané aktivace:** sigmoida a ReLU
 
@@ -345,6 +345,14 @@ Závěrečné spojité výstupy:
 | $(1,0)$ | 0 | $0{,}055890 / 0{,}056039$ | $0$ | $4{,}77\cdot10^{-7}$ |
 | $(1,1)$ | 1 | $0{,}933477 / 0{,}933299$ | $0$ | $0{,}999999285$ |
 
+Při dalších ručních pokusech se sigmoidou šlo
+zvýšit rychlost učení až na $0{,}3$ bez
+pozorovaného přestřelování. Pokles ztráty se
+u malé chyby zpomaloval; úplný průběh těchto
+pokusů nebyl zaznamenán.
+
+### Sekundární zjištění: počáteční aktivace ReLU
+
 ReLU se seedem 42 nechala na obou platformách
 pozitivní vzorek $(1,1)$ v neaktivní oblasti:
 počáteční $z_{11}$ bylo na Linuxu asi $-0{,}892$
@@ -363,11 +371,14 @@ a Windows různé počáteční parametry `rand()`;
 běhy na různých platformách proto netvoří
 srovnání rychlosti platforem.
 
-Při dalších ručních pokusech se sigmoidou šlo
-zvýšit rychlost učení až na $0{,}3$ bez
-pozorovaného přestřelování. Pokles ztráty se
-u malé chyby zpomaloval; úplný průběh těchto
-pokusů nebyl zaznamenán.
+U zdejších nezáporných vstupů mohou záporné
+počáteční váhy zvýšit riziko, že potřebný vzorek
+bude mít $z\leq0$ a nepřenese gradient přes ReLU.
+Rozhoduje však celý součet
+$z=\sum_i w_i x_i+b$, nikoli znaménko jednotlivé
+váhy nebo biasu. Z tohoto běhu neplyne obecný zákaz
+záporné inicializace ani četnost takového uvíznutí
+pro jiné úlohy.
 
 ## 10. Navržený závěr
 
