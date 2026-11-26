@@ -68,8 +68,8 @@ static void run_relu_experiment(const char *initialization, Perceptron model) {
         {1.0f, 1.0f}
     };
     const float targets[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    const float lr = 0.2f;
-    const size_t epochs = 10000;
+    const float lr = 0.0001f;
+    const size_t epochs = 100000;
     const size_t count = sizeof(inputs) / sizeof(inputs[0]);
 
     training.backward = optimizer_backward_mse_relu;
