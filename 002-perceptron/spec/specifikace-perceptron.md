@@ -1,8 +1,8 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 13
-- **Stav:** implementováno; závěr běhu čeká na odsouhlasení
+- **Revize:** 17
+- **Stav:** sigmoidální běh implementován; návrh ReLU čeká na schválení implementace
 - **Zvolená aktivační funkce:** sigmoida
 
 ## 1. Cíl
@@ -310,6 +310,11 @@ $(-0{,}989;-0{,}976)$ a bias $0{,}091$. Použité C runtime
 mají odlišné posloupnosti `rand()`. Křivky tedy nezačínají
 ze stejného modelu a nesrovnávají výkon platforem.
 
+Při dalších ručních pokusech se rychlost učení dala zvýšit
+až na $0{,}3$ bez pozorovaného přestřelování. Pokles ztráty
+se s přibližováním výstupů k cílům zpomaloval; konkrétní
+průběh těchto pokusů nebyl pro tento dokument zaznamenán.
+
 ## 9. Navržený závěr
 
 Jediný sigmoidální neuron s BGD a MSE při těchto podmínkách
@@ -317,7 +322,11 @@ postupně přiblížil spojité výstupy pravdivostní tabulce AND.
 MSE celé čtyřprvkové sady klesla na méně než $0{,}003$.
 Výstupy nebyly prahovány a vyhodnocení proběhlo na trénovacích
 datech; výsledek proto neprokazuje zobecnění na jiné úlohy.
-Závěr zatím není odsouhlasen.
+Zpomalení je slučitelné s tím, že gradient MSE násobí
+reziduum derivací sigmoidy, která se u výstupů blízkých
+$0$ a $1$ zmenšuje. Vhodnost MSE a sigmoidy pro binární
+úlohy zatím neposuzujeme bez srovnávacího běhu s jinou
+aktivací či ztrátou. Závěr zatím není odsouhlasen.
 
 ## 10. Vazba na zdrojový kód
 
@@ -328,15 +337,89 @@ Závěr zatím není odsouhlasen.
 - `tests/test_perceptron.c`: chování modelu, gradienty
   a přepínatelné volání `backward`.
 
+## 11. Návrh srovnání s ReLU
+
+### Teorie a očekávání
+
+Další otázka zní, jak změna aktivace ovlivní rychlost učení,
+konečnou chybu a stabilitu při stejné úloze, MSE a BGD.
+ReLU je definována jako $\rho(z)=\max(0,z)$; derivace
+je $0$ pro $z<0$ a $1$ pro $z>0$. V bodě $z=0$,
+kde derivace neexistuje, bude implementace používat $0$.
+
+Pro dávku $N$ vzorků vzniknou gradienty
+
+$$
+\frac{\partial\operatorname{MSE}}{\partial w_i}
+=\frac{2}{N}\sum_{k=1}^{N}
+\bigl(\rho(z_k)-y_k\bigr)
+\mathbf{1}_{z_k>0}x_{k,i},
+\qquad
+\frac{\partial\operatorname{MSE}}{\partial b}
+=\frac{2}{N}\sum_{k=1}^{N}
+\bigl(\rho(z_k)-y_k\bigr)
+\mathbf{1}_{z_k>0}.
+$$
+
+Symbol $\mathbf{1}_{z_k>0}$ značí $1$ právě pro aktivní
+část ReLU. Jeden neuron s ReLU umí na čtyřech binárních
+vstupech AND vytvořit přesné výstupy: při $w_1=w_2=1$
+a $b=-1$ je $\rho(x_1+x_2-1)$ rovna $0,0,0,1$.
+ReLU však nemá výstup omezený shora a při $z\leq 0$
+nepřenáší gradient. Počáteční váhy ze seedu 42 dávají
+na obou ověřených platformách pro vzorek $(1,1)$
+záporné $z$. Proto může běh se stejným seedem uvíznout.
+To je zatím teoretická předpověď, ne naměřený výsledek.
+
+### Srovnávací postup a architektura
+
+V Runneru zůstane sigmoidální běh jako základ. Přibudou
+dva běhy ReLU: první použije stejný konstruktor, seed
+a počáteční váhy jako sigmoidální běh na dané platformě;
+druhý použije pevné parametry v aktivní oblasti.
+Pro druhý běh jsou potvrzeny počáteční parametry
+$w_1=w_2=0{,}1$ a $b=0{,}1$.
+Všechny běhy mají stejnou trénovací tabulku, BGD,
+MSE, $\eta=0{,}2$ a $10\,000$ epoch. Výstupy
+zůstanou spojité, bez klasifikačního prahu.
+Srovnáme trajektorii MSE, konečné výstupy a to,
+zda neaktivní ReLU zastaví učení.
+
+Perceptron dostane přímou funkci
+`perceptron_forward_relu`. Optimizer dostane veřejnou
+dávkovou funkci `optimizer_backward_mse_relu`
+se stejným podpisem jako současná MSE varianta;
+Runner ji zvolí jednorázovým přiřazením do
+`Optimizer.backward`. Tím zůstane nepřímé volání
+jednou za dávku. Uvnitř smyčky přes vzorky nebude
+volání aktivace přes ukazatel na funkci. Původní
+sigmoidální funkce a aktualizace parametrů zůstanou
+samostatné. Model i gradienty zůstanou na zásobníku,
+bez další dynamické paměti.
+
+Tato volba zvětší zdrojový kód o specializovanou větev,
+ale zachová přímé výpočty v časté smyčce. Výpočet
+ReLU nevyžaduje exponenciálu; z toho samotného
+nevyvozujeme tvrzení o rychlosti bez měření.
+Jednotkové testy ověří výstup ReLU na obou stranách
+nuly, konvenci nulové derivace, dávkové gradienty
+pro aktivní vzorky a chování při neaktivním neuronu.
+Po implementaci doplníme naměřené výsledky a graf.
+
 ## Slovník pojmů
 
 - **Afinní funkce:** vztah $ax+b$; vážený součet vstupů
   představuje afinní část neuronu.
-- **Perceptron:** v tomto experimentu model jediného neuronu se
-  sigmoidální aktivací; původní perceptron používal prahovou aktivaci.
+- **Perceptron:** v tomto experimentu model jediného neuronu;
+  současný běh používá sigmoidální aktivaci, navržený běh ReLU.
+  Původní perceptron používal prahovou aktivaci.
 - **Aktivační funkce:** funkce použitá na afinní výstup neuronu;
-  zde je zvolena sigmoida.
+  současná je sigmoida, pro srovnání je navržena ReLU.
 - **Sigmoida:** funkce $\sigma(z)$ s průběhem tvaru S při změně $z$.
+- **ReLU:** aktivace $\max(0,z)$; kladný vstup propouští,
+  záporný převádí na nulu.
+- **Neaktivní neuron:** neuron s nekladným vstupem ReLU;
+  při zvolené nulové derivaci nedostává z daného vzorku gradient.
 - **Parametr:** váha $w_i$ nebo bias $b$ učený z dat.
 - **Hyperparametr:** volba modelu nebo trénování, například
   aktivace či rychlost učení, která se neurčuje gradientem vah.
