@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 22
+- **Revize:** 23
 - **Stav:** dokončeno
 - **Porovnávané aktivace:** sigmoida a ReLU
 
@@ -41,10 +41,11 @@ mezi **hyperparametry** modelu či trénování. Rychlost učení
 neovlivňuje výpočet již natrénovaného neuronu.
 
 Pro jeden vstup, $w_1=1$ a $b=0$, porovnává následující
-teoretický graf afinní výstup $z=x$ a aktivovaný výstup
-$\hat y=\sigma(x)$. Panely mají odlišné měřítko svislé osy.
+teoretický graf afinní výstup $z=x$ a výstupy aktivací
+$\hat y=\sigma(x)$ a $\hat y=\max(0,x)$.
+Panely mají odlišné měřítko svislé osy.
 
-![Teoretické porovnání afinní funkce a sigmoidální aktivace](graf-affinni-sigmoida.svg)
+![Teoretické porovnání afinní funkce, sigmoidy a ReLU](graf-affinni-sigmoida.svg)
 
 Sigmoidální výstup má při změně $z$ monotónní průběh
 tvaru S a leží mezi $0$ a $1$. Pro více vstupů se mění

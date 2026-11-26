@@ -1,56 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 455" role="img" aria-labelledby="title desc">
-<title id="title">Afinní funkce a sigmoidální aktivace</title>
-<desc id="desc">Teoretické křivky z rovnic z=x a sigma(x)=1/(1+exp(-x)) pro jednu vstupní hodnotu, váhu 1 a bias 0. Panely mají odlišné svislé měřítko.</desc>
-<rect width="960" height="455" fill="#ffffff"/>
-<text x="480" y="30" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#172033">Afinní funkce a sigmoidální aktivace</text>
-<text x="480" y="55" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#526071">Teoretický průběh pro jeden vstup, váhu 1 a bias 0</text>
-<text x="245.0" y="79" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#172033">Afinní funkce: z = x</text>
-<rect x="70" y="90" width="350" height="270" fill="#fbfcff" stroke="#a8b2bf"/>
-<line x1="70.0" y1="90" x2="70.0" y2="360" stroke="#dce2e9"/>
-<text x="70.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
-<line x1="157.5" y1="90" x2="157.5" y2="360" stroke="#dce2e9"/>
-<text x="157.5" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
-<line x1="245.0" y1="90" x2="245.0" y2="360" stroke="#dce2e9"/>
-<text x="245.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">0</text>
-<line x1="332.5" y1="90" x2="332.5" y2="360" stroke="#dce2e9"/>
-<text x="332.5" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">3</text>
-<line x1="420.0" y1="90" x2="420.0" y2="360" stroke="#dce2e9"/>
-<text x="420.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">6</text>
-<line x1="70" y1="360.0" x2="420" y2="360.0" stroke="#dce2e9"/>
-<text x="60" y="364.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
-<line x1="70" y1="292.5" x2="420" y2="292.5" stroke="#dce2e9"/>
-<text x="60" y="296.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
-<line x1="70" y1="225.0" x2="420" y2="225.0" stroke="#dce2e9"/>
-<text x="60" y="229.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0</text>
-<line x1="70" y1="157.5" x2="420" y2="157.5" stroke="#dce2e9"/>
-<text x="60" y="161.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">3</text>
-<line x1="70" y1="90.0" x2="420" y2="90.0" stroke="#dce2e9"/>
-<text x="60" y="94.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">6</text>
-<path d="M70.00,360.00 L72.92,357.75 L75.83,355.50 L78.75,353.25 L81.67,351.00 L84.58,348.75 L87.50,346.50 L90.42,344.25 L93.33,342.00 L96.25,339.75 L99.17,337.50 L102.08,335.25 L105.00,333.00 L107.92,330.75 L110.83,328.50 L113.75,326.25 L116.67,324.00 L119.58,321.75 L122.50,319.50 L125.42,317.25 L128.33,315.00 L131.25,312.75 L134.17,310.50 L137.08,308.25 L140.00,306.00 L142.92,303.75 L145.83,301.50 L148.75,299.25 L151.67,297.00 L154.58,294.75 L157.50,292.50 L160.42,290.25 L163.33,288.00 L166.25,285.75 L169.17,283.50 L172.08,281.25 L175.00,279.00 L177.92,276.75 L180.83,274.50 L183.75,272.25 L186.67,270.00 L189.58,267.75 L192.50,265.50 L195.42,263.25 L198.33,261.00 L201.25,258.75 L204.17,256.50 L207.08,254.25 L210.00,252.00 L212.92,249.75 L215.83,247.50 L218.75,245.25 L221.67,243.00 L224.58,240.75 L227.50,238.50 L230.42,236.25 L233.33,234.00 L236.25,231.75 L239.17,229.50 L242.08,227.25 L245.00,225.00 L247.92,222.75 L250.83,220.50 L253.75,218.25 L256.67,216.00 L259.58,213.75 L262.50,211.50 L265.42,209.25 L268.33,207.00 L271.25,204.75 L274.17,202.50 L277.08,200.25 L280.00,198.00 L282.92,195.75 L285.83,193.50 L288.75,191.25 L291.67,189.00 L294.58,186.75 L297.50,184.50 L300.42,182.25 L303.33,180.00 L306.25,177.75 L309.17,175.50 L312.08,173.25 L315.00,171.00 L317.92,168.75 L320.83,166.50 L323.75,164.25 L326.67,162.00 L329.58,159.75 L332.50,157.50 L335.42,155.25 L338.33,153.00 L341.25,150.75 L344.17,148.50 L347.08,146.25 L350.00,144.00 L352.92,141.75 L355.83,139.50 L358.75,137.25 L361.67,135.00 L364.58,132.75 L367.50,130.50 L370.42,128.25 L373.33,126.00 L376.25,123.75 L379.17,121.50 L382.08,119.25 L385.00,117.00 L387.92,114.75 L390.83,112.50 L393.75,110.25 L396.67,108.00 L399.58,105.75 L402.50,103.50 L405.42,101.25 L408.33,99.00 L411.25,96.75 L414.17,94.50 L417.08,92.25 L420.00,90.00" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="245.0" y="412" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#172033">Vstup x</text>
-<text x="715.0" y="79" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#172033">Sigmoida: ŷ = σ(x)</text>
-<rect x="540" y="90" width="350" height="270" fill="#fbfcff" stroke="#a8b2bf"/>
-<line x1="540.0" y1="90" x2="540.0" y2="360" stroke="#dce2e9"/>
-<text x="540.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
-<line x1="627.5" y1="90" x2="627.5" y2="360" stroke="#dce2e9"/>
-<text x="627.5" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
-<line x1="715.0" y1="90" x2="715.0" y2="360" stroke="#dce2e9"/>
-<text x="715.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">0</text>
-<line x1="802.5" y1="90" x2="802.5" y2="360" stroke="#dce2e9"/>
-<text x="802.5" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">3</text>
-<line x1="890.0" y1="90" x2="890.0" y2="360" stroke="#dce2e9"/>
-<text x="890.0" y="382" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">6</text>
-<line x1="540" y1="360.0" x2="890" y2="360.0" stroke="#dce2e9"/>
-<text x="530" y="364.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0</text>
-<line x1="540" y1="292.5" x2="890" y2="292.5" stroke="#dce2e9"/>
-<text x="530" y="296.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.25</text>
-<line x1="540" y1="225.0" x2="890" y2="225.0" stroke="#dce2e9"/>
-<text x="530" y="229.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.5</text>
-<line x1="540" y1="157.5" x2="890" y2="157.5" stroke="#dce2e9"/>
-<text x="530" y="161.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.75</text>
-<line x1="540" y1="90.0" x2="890" y2="90.0" stroke="#dce2e9"/>
-<text x="530" y="94.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">1</text>
-<path d="M540.00,359.33 L542.92,359.26 L545.83,359.19 L548.75,359.10 L551.67,359.01 L554.58,358.90 L557.50,358.79 L560.42,358.66 L563.33,358.52 L566.25,358.36 L569.17,358.19 L572.08,358.00 L575.00,357.80 L577.92,357.57 L580.83,357.31 L583.75,357.03 L586.67,356.73 L589.58,356.39 L592.50,356.01 L595.42,355.60 L598.33,355.14 L601.25,354.64 L604.17,354.09 L607.08,353.49 L610.00,352.82 L612.92,352.09 L615.83,351.28 L618.75,350.40 L621.67,349.43 L624.58,348.36 L627.50,347.20 L630.42,345.92 L633.33,344.52 L636.25,343.00 L639.17,341.33 L642.08,339.52 L645.00,337.54 L647.92,335.40 L650.83,333.07 L653.75,330.54 L656.67,327.82 L659.58,324.87 L662.50,321.70 L665.42,318.29 L668.33,314.64 L671.25,310.75 L674.17,306.59 L677.08,302.18 L680.00,297.50 L682.92,292.57 L685.83,287.39 L688.75,281.96 L691.67,276.29 L694.58,270.41 L697.50,264.33 L700.42,258.06 L703.33,251.65 L706.25,245.10 L709.17,238.46 L712.08,231.74 L715.00,225.00 L717.92,218.26 L720.83,211.54 L723.75,204.90 L726.67,198.35 L729.58,191.94 L732.50,185.67 L735.42,179.59 L738.33,173.71 L741.25,168.04 L744.17,162.61 L747.08,157.43 L750.00,152.50 L752.92,147.82 L755.83,143.41 L758.75,139.25 L761.67,135.36 L764.58,131.71 L767.50,128.30 L770.42,125.13 L773.33,122.18 L776.25,119.46 L779.17,116.93 L782.08,114.60 L785.00,112.46 L787.92,110.48 L790.83,108.67 L793.75,107.00 L796.67,105.48 L799.58,104.08 L802.50,102.80 L805.42,101.64 L808.33,100.57 L811.25,99.60 L814.17,98.72 L817.08,97.91 L820.00,97.18 L822.92,96.51 L825.83,95.91 L828.75,95.36 L831.67,94.86 L834.58,94.40 L837.50,93.99 L840.42,93.61 L843.33,93.27 L846.25,92.97 L849.17,92.69 L852.08,92.43 L855.00,92.20 L857.92,92.00 L860.83,91.81 L863.75,91.64 L866.67,91.48 L869.58,91.34 L872.50,91.21 L875.42,91.10 L878.33,90.99 L881.25,90.90 L884.17,90.81 L887.08,90.74 L890.00,90.67" fill="none" stroke="#dc5e17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="715.0" y="412" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#172033">Vstup x</text>
-<text x="480" y="443" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">Odlišná měřítka svislé osy; jde o vypočtené křivky, nikoli naměřená data.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1410 465" role="img" aria-labelledby="title desc">
+<title id="title">Afinní funkce, sigmoida a ReLU</title>
+<desc id="desc">Tři teoretické grafy pro jeden vstup, váhu 1 a bias 0: z rovno x, sigmoida x a ReLU x. Vodorovná osa je v každém panelu od minus 6 do 6. Svislá měřítka se liší.</desc>
+<rect width="1410" height="465" fill="#ffffff"/>
+<text x="705" y="30" text-anchor="middle" font-family="sans-serif" font-size="21" font-weight="bold" fill="#172033">Afinní funkce, sigmoida a ReLU</text>
+<text x="705" y="55" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#526071">Teoretický průběh pro jeden vstup, váhu 1 a bias 0</text>
+<text x="245.0" y="81" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#172033">Afinní funkce: z = x</text>
+<rect x="70" y="95" width="350" height="270" fill="#fbfcff" stroke="#a8b2bf"/>
+<line x1="70.0" y1="95" x2="70.0" y2="365" stroke="#dce2e9"/>
+<text x="70.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
+<line x1="157.5" y1="95" x2="157.5" y2="365" stroke="#dce2e9"/>
+<text x="157.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
+<line x1="245.0" y1="95" x2="245.0" y2="365" stroke="#dce2e9"/>
+<text x="245.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="332.5" y1="95" x2="332.5" y2="365" stroke="#dce2e9"/>
+<text x="332.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">3</text>
+<line x1="420.0" y1="95" x2="420.0" y2="365" stroke="#dce2e9"/>
+<text x="420.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">6</text>
+<line x1="70" y1="365.0" x2="420" y2="365.0" stroke="#dce2e9"/>
+<text x="60" y="369.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
+<line x1="70" y1="297.5" x2="420" y2="297.5" stroke="#dce2e9"/>
+<text x="60" y="301.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
+<line x1="70" y1="230.0" x2="420" y2="230.0" stroke="#dce2e9"/>
+<text x="60" y="234.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="70" y1="162.5" x2="420" y2="162.5" stroke="#dce2e9"/>
+<text x="60" y="166.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">3</text>
+<line x1="70" y1="95.0" x2="420" y2="95.0" stroke="#dce2e9"/>
+<text x="60" y="99.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">6</text>
+<polyline points="70.00,365.00 72.92,362.75 75.83,360.50 78.75,358.25 81.67,356.00 84.58,353.75 87.50,351.50 90.42,349.25 93.33,347.00 96.25,344.75 99.17,342.50 102.08,340.25 105.00,338.00 107.92,335.75 110.83,333.50 113.75,331.25 116.67,329.00 119.58,326.75 122.50,324.50 125.42,322.25 128.33,320.00 131.25,317.75 134.17,315.50 137.08,313.25 140.00,311.00 142.92,308.75 145.83,306.50 148.75,304.25 151.67,302.00 154.58,299.75 157.50,297.50 160.42,295.25 163.33,293.00 166.25,290.75 169.17,288.50 172.08,286.25 175.00,284.00 177.92,281.75 180.83,279.50 183.75,277.25 186.67,275.00 189.58,272.75 192.50,270.50 195.42,268.25 198.33,266.00 201.25,263.75 204.17,261.50 207.08,259.25 210.00,257.00 212.92,254.75 215.83,252.50 218.75,250.25 221.67,248.00 224.58,245.75 227.50,243.50 230.42,241.25 233.33,239.00 236.25,236.75 239.17,234.50 242.08,232.25 245.00,230.00 247.92,227.75 250.83,225.50 253.75,223.25 256.67,221.00 259.58,218.75 262.50,216.50 265.42,214.25 268.33,212.00 271.25,209.75 274.17,207.50 277.08,205.25 280.00,203.00 282.92,200.75 285.83,198.50 288.75,196.25 291.67,194.00 294.58,191.75 297.50,189.50 300.42,187.25 303.33,185.00 306.25,182.75 309.17,180.50 312.08,178.25 315.00,176.00 317.92,173.75 320.83,171.50 323.75,169.25 326.67,167.00 329.58,164.75 332.50,162.50 335.42,160.25 338.33,158.00 341.25,155.75 344.17,153.50 347.08,151.25 350.00,149.00 352.92,146.75 355.83,144.50 358.75,142.25 361.67,140.00 364.58,137.75 367.50,135.50 370.42,133.25 373.33,131.00 376.25,128.75 379.17,126.50 382.08,124.25 385.00,122.00 387.92,119.75 390.83,117.50 393.75,115.25 396.67,113.00 399.58,110.75 402.50,108.50 405.42,106.25 408.33,104.00 411.25,101.75 414.17,99.50 417.08,97.25 420.00,95.00" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="245.0" y="418" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#172033">Vstup x</text>
+<text x="705.0" y="81" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#172033">Sigmoida: ŷ = σ(x)</text>
+<rect x="530" y="95" width="350" height="270" fill="#fbfcff" stroke="#a8b2bf"/>
+<line x1="530.0" y1="95" x2="530.0" y2="365" stroke="#dce2e9"/>
+<text x="530.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
+<line x1="617.5" y1="95" x2="617.5" y2="365" stroke="#dce2e9"/>
+<text x="617.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
+<line x1="705.0" y1="95" x2="705.0" y2="365" stroke="#dce2e9"/>
+<text x="705.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="792.5" y1="95" x2="792.5" y2="365" stroke="#dce2e9"/>
+<text x="792.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">3</text>
+<line x1="880.0" y1="95" x2="880.0" y2="365" stroke="#dce2e9"/>
+<text x="880.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">6</text>
+<line x1="530" y1="365.0" x2="880" y2="365.0" stroke="#dce2e9"/>
+<text x="520" y="369.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="530" y1="297.5" x2="880" y2="297.5" stroke="#dce2e9"/>
+<text x="520" y="301.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.25</text>
+<line x1="530" y1="230.0" x2="880" y2="230.0" stroke="#dce2e9"/>
+<text x="520" y="234.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.5</text>
+<line x1="530" y1="162.5" x2="880" y2="162.5" stroke="#dce2e9"/>
+<text x="520" y="166.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0.75</text>
+<line x1="530" y1="95.0" x2="880" y2="95.0" stroke="#dce2e9"/>
+<text x="520" y="99.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">1</text>
+<polyline points="530.00,364.33 532.92,364.26 535.83,364.19 538.75,364.10 541.67,364.01 544.58,363.90 547.50,363.79 550.42,363.66 553.33,363.52 556.25,363.36 559.17,363.19 562.08,363.00 565.00,362.80 567.92,362.57 570.83,362.31 573.75,362.03 576.67,361.73 579.58,361.39 582.50,361.01 585.42,360.60 588.33,360.14 591.25,359.64 594.17,359.09 597.08,358.49 600.00,357.82 602.92,357.09 605.83,356.28 608.75,355.40 611.67,354.43 614.58,353.36 617.50,352.20 620.42,350.92 623.33,349.52 626.25,348.00 629.17,346.33 632.08,344.52 635.00,342.54 637.92,340.40 640.83,338.07 643.75,335.54 646.67,332.82 649.58,329.87 652.50,326.70 655.42,323.29 658.33,319.64 661.25,315.75 664.17,311.59 667.08,307.18 670.00,302.50 672.92,297.57 675.83,292.39 678.75,286.96 681.67,281.29 684.58,275.41 687.50,269.33 690.42,263.06 693.33,256.65 696.25,250.10 699.17,243.46 702.08,236.74 705.00,230.00 707.92,223.26 710.83,216.54 713.75,209.90 716.67,203.35 719.58,196.94 722.50,190.67 725.42,184.59 728.33,178.71 731.25,173.04 734.17,167.61 737.08,162.43 740.00,157.50 742.92,152.82 745.83,148.41 748.75,144.25 751.67,140.36 754.58,136.71 757.50,133.30 760.42,130.13 763.33,127.18 766.25,124.46 769.17,121.93 772.08,119.60 775.00,117.46 777.92,115.48 780.83,113.67 783.75,112.00 786.67,110.48 789.58,109.08 792.50,107.80 795.42,106.64 798.33,105.57 801.25,104.60 804.17,103.72 807.08,102.91 810.00,102.18 812.92,101.51 815.83,100.91 818.75,100.36 821.67,99.86 824.58,99.40 827.50,98.99 830.42,98.61 833.33,98.27 836.25,97.97 839.17,97.69 842.08,97.43 845.00,97.20 847.92,97.00 850.83,96.81 853.75,96.64 856.67,96.48 859.58,96.34 862.50,96.21 865.42,96.10 868.33,95.99 871.25,95.90 874.17,95.81 877.08,95.74 880.00,95.67" fill="none" stroke="#dc5e17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="705.0" y="418" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#172033">Vstup x</text>
+<text x="1165.0" y="81" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#172033">ReLU: ŷ = max(0, x)</text>
+<rect x="990" y="95" width="350" height="270" fill="#fbfcff" stroke="#a8b2bf"/>
+<line x1="990.0" y1="95" x2="990.0" y2="365" stroke="#dce2e9"/>
+<text x="990.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-6</text>
+<line x1="1077.5" y1="95" x2="1077.5" y2="365" stroke="#dce2e9"/>
+<text x="1077.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">-3</text>
+<line x1="1165.0" y1="95" x2="1165.0" y2="365" stroke="#dce2e9"/>
+<text x="1165.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="1252.5" y1="95" x2="1252.5" y2="365" stroke="#dce2e9"/>
+<text x="1252.5" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">3</text>
+<line x1="1340.0" y1="95" x2="1340.0" y2="365" stroke="#dce2e9"/>
+<text x="1340.0" y="386" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">6</text>
+<line x1="990" y1="365.0" x2="1340" y2="365.0" stroke="#dce2e9"/>
+<text x="980" y="369.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">0</text>
+<line x1="990" y1="297.5" x2="1340" y2="297.5" stroke="#dce2e9"/>
+<text x="980" y="301.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">1.5</text>
+<line x1="990" y1="230.0" x2="1340" y2="230.0" stroke="#dce2e9"/>
+<text x="980" y="234.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">3</text>
+<line x1="990" y1="162.5" x2="1340" y2="162.5" stroke="#dce2e9"/>
+<text x="980" y="166.5" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">4.5</text>
+<line x1="990" y1="95.0" x2="1340" y2="95.0" stroke="#dce2e9"/>
+<text x="980" y="99.0" text-anchor="end" font-family="sans-serif" font-size="12" fill="#526071">6</text>
+<polyline points="990.00,365.00 992.92,365.00 995.83,365.00 998.75,365.00 1001.67,365.00 1004.58,365.00 1007.50,365.00 1010.42,365.00 1013.33,365.00 1016.25,365.00 1019.17,365.00 1022.08,365.00 1025.00,365.00 1027.92,365.00 1030.83,365.00 1033.75,365.00 1036.67,365.00 1039.58,365.00 1042.50,365.00 1045.42,365.00 1048.33,365.00 1051.25,365.00 1054.17,365.00 1057.08,365.00 1060.00,365.00 1062.92,365.00 1065.83,365.00 1068.75,365.00 1071.67,365.00 1074.58,365.00 1077.50,365.00 1080.42,365.00 1083.33,365.00 1086.25,365.00 1089.17,365.00 1092.08,365.00 1095.00,365.00 1097.92,365.00 1100.83,365.00 1103.75,365.00 1106.67,365.00 1109.58,365.00 1112.50,365.00 1115.42,365.00 1118.33,365.00 1121.25,365.00 1124.17,365.00 1127.08,365.00 1130.00,365.00 1132.92,365.00 1135.83,365.00 1138.75,365.00 1141.67,365.00 1144.58,365.00 1147.50,365.00 1150.42,365.00 1153.33,365.00 1156.25,365.00 1159.17,365.00 1162.08,365.00 1165.00,365.00 1167.92,360.50 1170.83,356.00 1173.75,351.50 1176.67,347.00 1179.58,342.50 1182.50,338.00 1185.42,333.50 1188.33,329.00 1191.25,324.50 1194.17,320.00 1197.08,315.50 1200.00,311.00 1202.92,306.50 1205.83,302.00 1208.75,297.50 1211.67,293.00 1214.58,288.50 1217.50,284.00 1220.42,279.50 1223.33,275.00 1226.25,270.50 1229.17,266.00 1232.08,261.50 1235.00,257.00 1237.92,252.50 1240.83,248.00 1243.75,243.50 1246.67,239.00 1249.58,234.50 1252.50,230.00 1255.42,225.50 1258.33,221.00 1261.25,216.50 1264.17,212.00 1267.08,207.50 1270.00,203.00 1272.92,198.50 1275.83,194.00 1278.75,189.50 1281.67,185.00 1284.58,180.50 1287.50,176.00 1290.42,171.50 1293.33,167.00 1296.25,162.50 1299.17,158.00 1302.08,153.50 1305.00,149.00 1307.92,144.50 1310.83,140.00 1313.75,135.50 1316.67,131.00 1319.58,126.50 1322.50,122.00 1325.42,117.50 1328.33,113.00 1331.25,108.50 1334.17,104.00 1337.08,99.50 1340.00,95.00" fill="none" stroke="#16804a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1165.0" y="418" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#172033">Vstup x</text>
+<text x="705" y="448" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#526071">Odlišná měřítka svislé osy; vypočtené křivky, nikoli naměřená data.</text>
 </svg>
