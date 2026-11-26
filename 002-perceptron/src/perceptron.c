@@ -1,6 +1,6 @@
 /**
  * @file perceptron.c
- * @brief Random initialization and sigmoid forward computation.
+ * @brief Random initialization and direct sigmoid and ReLU inference.
  */
 
 #include "perceptron/perceptron.h"
@@ -29,4 +29,12 @@ float perceptron_forward(Perceptron *self,
     float z = self->w[0] * x[0] + self->w[1] * x[1] + self->b;
 
     return 1.0f / (1.0f + expf(-z));
+}
+
+
+float perceptron_forward_relu(Perceptron *self,
+        const float x[PERCEPTRON_INPUT_COUNT]) {
+    float z = self->w[0] * x[0] + self->w[1] * x[1] + self->b;
+
+    return z > 0.0f ? z : 0.0f;
 }

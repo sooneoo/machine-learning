@@ -210,6 +210,91 @@ static bool test_backward_callback(char *error, size_t error_size) {
 }
 
 
+static bool test_relu_forward(char *error, size_t error_size) {
+    Perceptron model = {.w = {1.0f, 1.0f}, .b = -1.0f};
+    const float negative[PERCEPTRON_INPUT_COUNT] = {0.0f, 0.0f};
+    const float boundary[PERCEPTRON_INPUT_COUNT] = {1.0f, 0.0f};
+    const float positive[PERCEPTRON_INPUT_COUNT] = {1.0f, 1.0f};
+
+    TEST_ASSERT(perceptron_forward_relu(&model, negative) == 0.0f,
+            "negative pre-activation must produce zero");
+    TEST_ASSERT(perceptron_forward_relu(&model, boundary) == 0.0f,
+            "zero pre-activation must produce zero");
+    TEST_ASSERT(perceptron_forward_relu(&model, positive) == 1.0f,
+            "positive pre-activation must pass through");
+    TEST_ASSERT(model.w[0] == 1.0f && model.b == -1.0f,
+            "ReLU forward must not change parameters");
+    return true;
+}
+
+
+static bool test_relu_batch_gradients(char *error, size_t error_size) {
+    Perceptron model = {.w = {0.1f, 0.1f}, .b = 0.1f};
+    Optimizer training = optimizer(&model);
+    const float inputs[][PERCEPTRON_INPUT_COUNT] = {
+        {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}
+    };
+    const float targets[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    training.backward = optimizer_backward_mse_relu;
+    float loss = optimizer_backward(&training, inputs, targets, 4);
+
+    TEST_ASSERT(close_float(loss, 0.145f, 0.000001f),
+            "ReLU batch MSE at fixed initialization");
+    TEST_ASSERT(close_float(training.gw[0], -0.25f, 0.000001f)
+            && close_float(training.gw[1], -0.25f, 0.000001f),
+            "ReLU mean weight gradients");
+    TEST_ASSERT(close_float(training.gb, -0.1f, 0.000001f),
+            "ReLU mean bias gradient");
+    optimizer_update(&training, 0.2f);
+    TEST_ASSERT(close_float(model.w[0], 0.15f, 0.000001f)
+            && close_float(model.w[1], 0.15f, 0.000001f)
+            && close_float(model.b, 0.12f, 0.000001f),
+            "shared update must apply ReLU gradients");
+    return true;
+}
+
+
+static bool test_relu_inactive_gradients(char *error, size_t error_size) {
+    Perceptron model = {.w = {-0.5f, -0.5f}, .b = -0.1f};
+    Optimizer training = optimizer(&model);
+    const float inputs[][PERCEPTRON_INPUT_COUNT] = {
+        {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}
+    };
+    const float targets[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    training.backward = optimizer_backward_mse_relu;
+    float loss = optimizer_backward(&training, inputs, targets, 4);
+
+    TEST_ASSERT(close_float(loss, 0.25f, 0.000001f),
+            "inactive ReLU still reports the batch loss");
+    TEST_ASSERT(training.gw[0] == 0.0f && training.gw[1] == 0.0f
+            && training.gb == 0.0f,
+            "inactive ReLU has zero gradients");
+    optimizer_update(&training, 0.2f);
+    TEST_ASSERT(model.w[0] == -0.5f && model.w[1] == -0.5f
+            && model.b == -0.1f,
+            "inactive model must not change");
+
+    Perceptron boundary_model = {0};
+    Optimizer boundary_training = optimizer(&boundary_model);
+    const float boundary_inputs[][PERCEPTRON_INPUT_COUNT] = {{0.0f, 0.0f}};
+    const float boundary_targets[] = {1.0f};
+
+    boundary_training.backward = optimizer_backward_mse_relu;
+    float boundary_loss = optimizer_backward(&boundary_training,
+            boundary_inputs, boundary_targets, 1);
+
+    TEST_ASSERT(boundary_loss == 1.0f,
+            "zero pre-activation still reports squared loss");
+    TEST_ASSERT(boundary_training.gw[0] == 0.0f
+            && boundary_training.gw[1] == 0.0f
+            && boundary_training.gb == 0.0f,
+            "ReLU derivative at zero is defined as zero");
+    return true;
+}
+
+
 static const TestCase tests[] = {
     {"seeded constructor", test_constructor},
     {"sigmoid forward", test_forward},
@@ -217,12 +302,15 @@ static const TestCase tests[] = {
     {"batch MSE and bias update", test_batch_mse_and_bias_update},
     {"single row weight update", test_single_row_weight_update},
     {"analytic gradients", test_gradients_against_finite_difference},
-    {"selectable backward callback", test_backward_callback}
+    {"selectable backward callback", test_backward_callback},
+    {"ReLU forward", test_relu_forward},
+    {"ReLU batch gradients", test_relu_batch_gradients},
+    {"ReLU inactive gradients", test_relu_inactive_gradients}
 };
 
 
 const TestSuite test_suite_perceptron = {
-    .name = "sigmoid perceptron",
+    .name = "perceptron activation comparison",
     .tests = tests,
     .test_count = sizeof(tests) / sizeof(tests[0])
 };

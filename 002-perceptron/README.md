@@ -1,8 +1,10 @@
 # 002-perceptron
 
-Jediný sigmoidální neuron se dvěma vstupy se učí pravdivostní tabulku AND
-pomocí MSE a BGD. Běh má 10000 epoch a rychlost učení 0,2.
-Po trénování Runner vypíše spojité výstupy na téže tabulce.
+Jediný neuron se dvěma vstupy porovnává sigmoidální a ReLU aktivaci
+na pravdivostní tabulce AND. Runner provádí tři běhy s MSE, BGD,
+10000 epochami a rychlostí učení 0,2: sigmoida se seedem 42,
+ReLU se stejným seedem a ReLU s pevným počátečním nastavením.
+Po každém běhu vypíše spojité výstupy na trénovací tabulce.
 [Architektura, metodika a výsledky](spec/specifikace-perceptron.md)
 jsou v české specifikaci.
 

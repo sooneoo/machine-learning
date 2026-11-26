@@ -1,9 +1,9 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 17
-- **Stav:** sigmoidální běh implementován; návrh ReLU čeká na schválení implementace
-- **Zvolená aktivační funkce:** sigmoida
+- **Revize:** 18
+- **Stav:** tři běhy implementovány; závěr srovnání čeká na odsouhlasení
+- **Porovnávané aktivace:** sigmoida a ReLU
 
 ## 1. Cíl
 
@@ -91,20 +91,19 @@ dvojice vstupů tvoří jeden řádek a má odpovídající cíl.
 Dávkové rozhraní předá obě pole a počet řádků bez kopírování.
 Samostatnou validační množinu pro tuto úlohu nevytváříme.
 Závěrečné vyhodnocení na stejných datech ukáže naučení
-pravdivostní tabulky, nikoli zobecnění na
-neviděné vstupy.
+pravdivostní tabulky, nikoli zobecnění na neviděné vstupy.
 
 ## 4. Architektura programu
 
 Perceptron uchovává dvě váhy a bias, počítá sigmoidální
-výstup a nezná optimalizátor. Optimizer drží nevlastněný
+výstup nebo ReLU a nezná optimalizátor. Optimizer drží nevlastněný
 ukazatel na model, dva gradienty vah a gradient biasu;
 vypočtené gradienty použije při aktualizaci parametrů.
-Runner v souboru main.c má samostatnou funkci
-`run_and_experiment`, kterou zavolá `main`.
-V této funkci vytvoří na zásobníku nejprve Perceptron,
-pak Optimizer, připraví konstantní trénovací pole,
-řídí trénování a nakonec vyhodnotí celou tabulku AND.
+Runner v souboru `main.c` spouští sigmoidální běh
+`run_and_experiment` a dva běhy ReLU ve funkci
+`run_relu_experiment`. Každý běh vytvoří na zásobníku
+Perceptron a Optimizer, připraví konstantní trénovací
+pole a vyhodnotí celou tabulku AND.
 
 ```mermaid
 classDiagram
@@ -112,6 +111,7 @@ classDiagram
     class Runner {
         +main()
         +run_and_experiment()
+        +run_relu_experiment()
     }
     class Optimizer {
         +model
@@ -121,6 +121,7 @@ classDiagram
         +optimizer()
         +optimizer_backward()
         +optimizer_backward_mse()
+        +optimizer_backward_mse_relu()
         +optimizer_update()
     }
     class Perceptron {
@@ -128,6 +129,7 @@ classDiagram
         +b
         +perceptron()
         +perceptron_forward()
+        +perceptron_forward_relu()
     }
     Runner ..> Perceptron : vytváří a vyhodnocuje
     Runner ..> Optimizer : volí funkci a řídí učení
@@ -138,7 +140,7 @@ Optimizer drží ukazatel `backward` na dávkovou funkci.
 Zvolená veřejná implementace spočítá hodnotu ztráty, její
 derivaci i gradienty všech vah a biasu. Ztrátu vrátí;
 gradienty uloží do instance Optimizer pro následnou aktualizaci.
-První implementace používá MSE a BGD. Další ztrátová funkce
+Obě aktivace používají MSE a BGD. Další ztrátová funkce
 může používat stejné volání z Runneru bez změny Perceptronu.
 Nepřímé volání proběhne jednou za dávku, nikoli pro každý vzorek.
 
@@ -151,6 +153,7 @@ ani optimalizátoru nevyžaduje dynamickou alokaci.
 ```c
 Perceptron perceptron(void);
 float perceptron_forward(Perceptron *self, const float x[2]);
+float perceptron_forward_relu(Perceptron *self, const float x[2]);
 ```
 
 Konstruktor vrací strukturu hodnotou a náhodně inicializuje
@@ -167,6 +170,8 @@ Konstruktor a aktualizace navazují na experiment 001:
 ```c
 Optimizer optimizer(Perceptron *model);
 float optimizer_backward_mse(Optimizer *self,
+        const float inputs[][2], const float targets[], size_t count);
+float optimizer_backward_mse_relu(Optimizer *self,
         const float inputs[][2], const float targets[], size_t count);
 void optimizer_update(Optimizer *self, float lr);
 ```
@@ -248,173 +253,151 @@ gradienty celé trénovací dávky. Výpočet derivace ztráty
 může uvnitř funkce zůstat oddělený nebo se sloučit s dalšími
 kroky, pokud to zlepší výkon či numerickou stabilitu.
 
-## 6. Metodika a diagnostika
+## 6. Rozšíření o ReLU
 
-`main` zavolá `run_and_experiment`. Funkce
-v každé epoše zavolá `optimizer_backward` nad celou
-čtyřřádkovou dávkou, poté aktualizuje parametry (BGD).
-Pozorovací běh má $10\,000$ epoch a rychlost učení
-$\eta=0{,}2$. Runner vypíše počáteční nastavení,
-průběžnou ztrátu před aktualizací a váhy s biasem po ní. Po poslední epoše
-vypíše pro každou kombinaci AND vstupy, cíl a přímo
-spojitý výstup `perceptron_forward` bez prahování.
-Nakonec vypíše MSE celé trénovací tabulky.
-Samostatné běhy oddělí prázdným řádkem. Zvolený počet epoch
-není zárukou dosažené přesnosti.
-
-## 7. Požadavky a ověření
-
-- Konstruktor vrátí hodnotovou strukturu s váhami a biasem
-  v intervalu $[-1,1]$; test ověří rozsah a opakování při
-  stejném semínku v jednom C runtime.
-- `perceptron_forward` spočítá sigmoidální výstup ze
-  dvou vstupů; test ověří známé hodnoty, monotonii
-  a zachování parametrů.
-- Dávková MSE funkce vrátí ztrátu a uloží gradienty do
-  Optimizeru; test porovná gradienty s numerickou derivací
-  a ověří krok `optimizer_update`.
-- Test s náhradní funkcí `backward` ověří, že jednotný
-  obal předá dávku vybranému callbacku a vrátí jeho ztrátu.
-  Aktualizace před prvním výpočtem gradientů model nezmění.
-- Runner během $10\,000$ epoch průběžně vypíše ztrátu
-  a parametry, poté spojité výstupy na čtyřech kombinacích a MSE.
-  Výsledek je pozorováním prvního běhu, bez požadavku na
-  přesnou hodnotu MSE či klasifikační správnost.
-
-## 8. Průběh a výsledky běhu
-
-Při $10\,000$ krocích BGD klesla MSE celé trénovací tabulky:
-
-| Platforma | MSE před učením | MSE po učení |
-|---|---:|---:|
-| `linux_x86_64` | $0{,}312519$ | $0{,}002668$ |
-| `win32_x86_64` | $0{,}298458$ | $0{,}002682$ |
-
-Následující graf zobrazuje naměřené hodnoty po přibližně
-$100$ krocích a konečnou MSE. Nejde o teoretickou křivku.
-
-![Naměřený vývoj MSE při učení AND na Linuxu a Windows](graf-mse-and.svg)
-
-Závěrečné spojité výstupy na stejných čtyřech vzorcích:
-
-| $(x_1,x_2)$ | Cíl $y$ | Linux $\hat y$ | Windows $\hat y$ |
-|---|---:|---:|---:|
-| $(0,0)$ | 0 | $0{,}000250$ | $0{,}000252$ |
-| $(0,1)$ | 0 | $0{,}055890$ | $0{,}056039$ |
-| $(1,0)$ | 0 | $0{,}055890$ | $0{,}056039$ |
-| $(1,1)$ | 1 | $0{,}933477$ | $0{,}933299$ |
-
-Stejný seed 42 dal na Linuxu počáteční váhy přibližně
-$(-0{,}933;-0{,}340)$ a bias $0{,}381$; na Windows
-$(-0{,}989;-0{,}976)$ a bias $0{,}091$. Použité C runtime
-mají odlišné posloupnosti `rand()`. Křivky tedy nezačínají
-ze stejného modelu a nesrovnávají výkon platforem.
-
-Při dalších ručních pokusech se rychlost učení dala zvýšit
-až na $0{,}3$ bez pozorovaného přestřelování. Pokles ztráty
-se s přibližováním výstupů k cílům zpomaloval; konkrétní
-průběh těchto pokusů nebyl pro tento dokument zaznamenán.
-
-## 9. Navržený závěr
-
-Jediný sigmoidální neuron s BGD a MSE při těchto podmínkách
-postupně přiblížil spojité výstupy pravdivostní tabulce AND.
-MSE celé čtyřprvkové sady klesla na méně než $0{,}003$.
-Výstupy nebyly prahovány a vyhodnocení proběhlo na trénovacích
-datech; výsledek proto neprokazuje zobecnění na jiné úlohy.
-Zpomalení je slučitelné s tím, že gradient MSE násobí
-reziduum derivací sigmoidy, která se u výstupů blízkých
-$0$ a $1$ zmenšuje. Vhodnost MSE a sigmoidy pro binární
-úlohy zatím neposuzujeme bez srovnávacího běhu s jinou
-aktivací či ztrátou. Závěr zatím není odsouhlasen.
-
-## 10. Vazba na zdrojový kód
-
-- `src/perceptron.c`: inicializace a sigmoidální výstup.
-- `src/optimizer.c`: MSE, dávkové gradienty a aktualizace.
-- `src/main.c`: trénovací běh a diagnostický výpis.
-- `config/*.mk`: překlad pro Linux a Windows.
-- `tests/test_perceptron.c`: chování modelu, gradienty
-  a přepínatelné volání `backward`.
-
-## 11. Návrh srovnání s ReLU
-
-### Teorie a očekávání
-
-Další otázka zní, jak změna aktivace ovlivní rychlost učení,
-konečnou chybu a stabilitu při stejné úloze, MSE a BGD.
-ReLU je definována jako $\rho(z)=\max(0,z)$; derivace
-je $0$ pro $z<0$ a $1$ pro $z>0$. V bodě $z=0$,
-kde derivace neexistuje, bude implementace používat $0$.
-
-Pro dávku $N$ vzorků vzniknou gradienty
+ReLU je $\rho(z)=\max(0,z)$ a její derivace
+je $0$ pro $z<0$ a $1$ pro $z>0$. V bodě
+$z=0$ volí implementace derivaci $0$.
+Pro celou dávku počítá Optimizer
 
 $$
 \frac{\partial\operatorname{MSE}}{\partial w_i}
 =\frac{2}{N}\sum_{k=1}^{N}
-\bigl(\rho(z_k)-y_k\bigr)
-\mathbf{1}_{z_k>0}x_{k,i},
+\bigl(\rho(z_k)-y_k\bigr)\mathbf{1}_{z_k>0}x_{k,i},
 \qquad
 \frac{\partial\operatorname{MSE}}{\partial b}
 =\frac{2}{N}\sum_{k=1}^{N}
-\bigl(\rho(z_k)-y_k\bigr)
-\mathbf{1}_{z_k>0}.
+\bigl(\rho(z_k)-y_k\bigr)\mathbf{1}_{z_k>0}.
 $$
 
-Symbol $\mathbf{1}_{z_k>0}$ značí $1$ právě pro aktivní
-část ReLU. Jeden neuron s ReLU umí na čtyřech binárních
-vstupech AND vytvořit přesné výstupy: při $w_1=w_2=1$
-a $b=-1$ je $\rho(x_1+x_2-1)$ rovna $0,0,0,1$.
-ReLU však nemá výstup omezený shora a při $z\leq 0$
-nepřenáší gradient. Počáteční váhy ze seedu 42 dávají
-na obou ověřených platformách pro vzorek $(1,1)$
-záporné $z$. Proto může běh se stejným seedem uvíznout.
-To je zatím teoretická předpověď, ne naměřený výsledek.
+Symbol $\mathbf{1}_{z_k>0}$ je $1$ v aktivní oblasti
+a jinak $0$. Jediný neuron s ReLU umí na binárních
+vstupech AND vytvořit přesné výstupy:
+pro $w_1=w_2=1$ a $b=-1$ je
+$\rho(x_1+x_2-1)$ rovna $0,0,0,1$.
+ReLU nemá výstup omezený shora. Pro nekladné $z$
+nepřenáší gradient a neuron může uvíznout.
 
-### Srovnávací postup a architektura
+Přímá funkce `perceptron_forward_relu` vrací
+aktivovaný výstup. Veřejná dávková funkce
+`optimizer_backward_mse_relu` počítá ztrátu
+a gradienty; Runner ji zvolí jednorázově v
+`Optimizer.backward`. Nepřímé volání tak
+zůstává jednou za dávku, nikoli uvnitř smyčky
+přes vzorky. Struktury, vlastnictví dat a
+paměťový režim se nemění. Výpočet ReLU
+nevyžaduje exponenciálu; rychlost obou
+variant nebyla měřena.
 
-V Runneru zůstane sigmoidální běh jako základ. Přibudou
-dva běhy ReLU: první použije stejný konstruktor, seed
-a počáteční váhy jako sigmoidální běh na dané platformě;
-druhý použije pevné parametry v aktivní oblasti.
-Pro druhý běh jsou potvrzeny počáteční parametry
-$w_1=w_2=0{,}1$ a $b=0{,}1$.
-Všechny běhy mají stejnou trénovací tabulku, BGD,
-MSE, $\eta=0{,}2$ a $10\,000$ epoch. Výstupy
-zůstanou spojité, bez klasifikačního prahu.
-Srovnáme trajektorii MSE, konečné výstupy a to,
-zda neaktivní ReLU zastaví učení.
+## 7. Metodika a diagnostika
 
-Perceptron dostane přímou funkci
-`perceptron_forward_relu`. Optimizer dostane veřejnou
-dávkovou funkci `optimizer_backward_mse_relu`
-se stejným podpisem jako současná MSE varianta;
-Runner ji zvolí jednorázovým přiřazením do
-`Optimizer.backward`. Tím zůstane nepřímé volání
-jednou za dávku. Uvnitř smyčky přes vzorky nebude
-volání aktivace přes ukazatel na funkci. Původní
-sigmoidální funkce a aktualizace parametrů zůstanou
-samostatné. Model i gradienty zůstanou na zásobníku,
-bez další dynamické paměti.
+Tři běhy používají tabulku AND, MSE, BGD, $10\,000$ epoch
+a rychlost učení $\eta=0{,}2$. Sigmoida a první ReLU
+začínají po samostatném `srand(42)` se shodnými
+váhami na dané platformě. Druhá ReLU začíná
+$w_1=w_2=b=0{,}1$. Runner průběžně vypisuje MSE
+před aktualizací a parametry po ní. Nakonec vypíše
+spojité výstupy všech čtyř vzorků a MSE trénovací
+tabulky. Běhy oddělí prázdným řádkem.
 
-Tato volba zvětší zdrojový kód o specializovanou větev,
-ale zachová přímé výpočty v časté smyčce. Výpočet
-ReLU nevyžaduje exponenciálu; z toho samotného
-nevyvozujeme tvrzení o rychlosti bez měření.
-Jednotkové testy ověří výstup ReLU na obou stranách
-nuly, konvenci nulové derivace, dávkové gradienty
-pro aktivní vzorky a chování při neaktivním neuronu.
-Po implementaci doplníme naměřené výsledky a graf.
+Srovnáme trajektorii MSE, konečné výstupy a stav,
+kdy ReLU nemá gradient pro pozitivní vzorek. Výstup
+neprahuje žádný běh; validační množina není k dispozici.
+
+## 8. Požadavky a ověření
+
+- Konstruktor vrátí hodnotovou strukturu s parametry v
+  $[-1,1]$ a opakovatelnými hodnotami při stejném seedu
+  v jednom C runtime.
+- Testy ověří sigmoidální i ReLU forward, analytické
+  gradienty sigmoidální MSE a dávkový gradient ReLU.
+- U ReLU testy pokryjí kladné i nekladné $z$, nulovou
+  derivaci v $z=0$, uvíznutí neaktivního neuronu
+  a použití společné funkce `optimizer_update`.
+- Náhradní `backward` ověří přepínatelné rozhraní;
+  update před prvním backward parametry nezmění.
+- Runner vypíše tři běhy se stejnými podmínkami,
+  čtyři spojité výstupy každého běhu a výslednou MSE.
+
+## 9. Průběh a výsledky
+
+Po $10\,000$ krocích BGD byly naměřeny tyto MSE celé
+čtyřprvkové trénovací tabulky:
+
+| Aktivace a start | Linux: před → po | Windows: před → po |
+|---|---:|---:|
+| Sigmoida, seed 42 | $0{,}312519 \to 0{,}002668$ | $0{,}298458 \to 0{,}002682$ |
+| ReLU, seed 42 | $0{,}286766 \to 0{,}25$ | $0{,}252055 \to 0{,}25$ |
+| ReLU, pevný start | $0{,}145 \to 2{,}42\cdot10^{-13}$ | $0{,}145 \to 2{,}42\cdot10^{-13}$ |
+
+Graf ukazuje naměřené hodnoty přibližně po $100$
+krocích a konečnou MSE. Panely oddělují platformy;
+nejde o teoretické křivky.
+
+![Naměřený vývoj MSE tří běhů AND v Linuxu a Windows](graf-mse-and.svg)
+
+Závěrečné spojité výstupy:
+
+| Vstup | Cíl | Sigmoida Linux / Windows | ReLU seed 42 | ReLU pevný start |
+|---|---:|---:|---:|---:|
+| $(0,0)$ | 0 | $0{,}000250 / 0{,}000252$ | $\approx 0$ | $0$ |
+| $(0,1)$ | 0 | $0{,}055890 / 0{,}056039$ | $0$ | $4{,}77\cdot10^{-7}$ |
+| $(1,0)$ | 0 | $0{,}055890 / 0{,}056039$ | $0$ | $4{,}77\cdot10^{-7}$ |
+| $(1,1)$ | 1 | $0{,}933477 / 0{,}933299$ | $0$ | $0{,}999999285$ |
+
+ReLU se seedem 42 nechala na obou platformách
+pozitivní vzorek $(1,1)$ v neaktivní oblasti.
+Výstup pro něj zůstal nulový a MSE na $0{,}25$.
+Pevně inicializovaná ReLU se naopak přiblížila
+přesné tabulce AND. Stejný seed dal mezi Linuxem
+a Windows různé počáteční parametry `rand()`;
+běhy na různých platformách proto netvoří
+srovnání rychlosti platforem.
+
+Při dalších ručních pokusech se sigmoidou šlo
+zvýšit rychlost učení až na $0{,}3$ bez
+pozorovaného přestřelování. Pokles ztráty se
+u malé chyby zpomaloval; úplný průběh těchto
+pokusů nebyl zaznamenán.
+
+## 10. Navržený závěr
+
+Sigmoida při zvolených podmínkách aproximovala AND,
+ale MSE klesala postupně. ReLU s aktivním pevným
+startem dosáhla výstupů s odchylkou řádově $10^{-6}$,
+zatímco ReLU se stejnými náhodnými váhami jako
+sigmoida uvázla na $0{,}25$. Rozdíl mezi dvěma
+běhy ReLU ukazuje zásadní citlivost na inicializaci.
+Rychlejší pokles u pevného startu nelze připsat
+jen aktivační funkci, protože počáteční parametry
+se lišily. Zpomalení sigmoidálního běhu odpovídá
+gradientu MSE násobenému derivací sigmoidy.
+
+Vyhodnocení proběhlo na trénovacích datech.
+Výsledek neprokazuje vhodnost aktivace pro jiné
+úlohy ani optimálnost MSE pro binární cíle.
+Závěr zatím není odsouhlasen.
+
+## 11. Vazba na zdrojový kód
+
+- `src/perceptron.c`: inicializace a přímé výstupy
+  sigmoidy i ReLU.
+- `src/optimizer.c`: obě varianty dávkového
+  gradientu MSE a společná aktualizace.
+- `src/main.c`: tři běhy a diagnostický výpis.
+- `config/*.mk`: překlad pro Linux a Windows.
+- `tests/test_perceptron.c`: výstupy, gradienty,
+  neaktivní ReLU a přepínatelné volání `backward`.
 
 ## Slovník pojmů
 
 - **Afinní funkce:** vztah $ax+b$; vážený součet vstupů
   představuje afinní část neuronu.
 - **Perceptron:** v tomto experimentu model jediného neuronu;
-  současný běh používá sigmoidální aktivaci, navržený běh ReLU.
+  první běh používá sigmoidální aktivaci, další dva ReLU.
   Původní perceptron používal prahovou aktivaci.
 - **Aktivační funkce:** funkce použitá na afinní výstup neuronu;
-  současná je sigmoida, pro srovnání je navržena ReLU.
+  porovnáváme sigmoidální aktivaci s ReLU.
 - **Sigmoida:** funkce $\sigma(z)$ s průběhem tvaru S při změně $z$.
 - **ReLU:** aktivace $\max(0,z)$; kladný vstup propouští,
   záporný převádí na nulu.

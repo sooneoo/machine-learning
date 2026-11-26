@@ -1,6 +1,6 @@
 /**
  * @file perceptron.h
- * @brief One sigmoid neuron with two compile-time inputs.
+ * @brief One neuron with two compile-time inputs and selectable activation.
  */
 
 #ifndef PERCEPTRON_PERCEPTRON_H
@@ -11,7 +11,7 @@ enum {
     PERCEPTRON_INPUT_COUNT = 2
 };
 
-/** @brief Value-owned weights and bias for one sigmoid neuron. */
+/** @brief Value-owned weights and bias for one neuron. */
 typedef struct {
     float w[PERCEPTRON_INPUT_COUNT]; /**< Input weights. */
     float b; /**< Bias added to the weighted sum. */
@@ -33,6 +33,16 @@ Perceptron perceptron(void);
  * @pre self and x are valid; all model parameters and inputs are finite.
  */
 float perceptron_forward(Perceptron *self,
+        const float x[PERCEPTRON_INPUT_COUNT]);
+
+/**
+ * @brief Evaluate ReLU of the weighted input sum.
+ * @param[in] self Live model; the function does not modify it.
+ * @param[in] x Exactly two finite input values.
+ * @return Nonnegative, unbounded ReLU output for the input pair.
+ * @pre self and x are valid; all model parameters and inputs are finite.
+ */
+float perceptron_forward_relu(Perceptron *self,
         const float x[PERCEPTRON_INPUT_COUNT]);
 
 #endif

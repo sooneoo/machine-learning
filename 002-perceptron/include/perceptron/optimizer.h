@@ -1,6 +1,6 @@
 /**
  * @file optimizer.h
- * @brief Selectable full-batch loss gradients for one sigmoid neuron.
+ * @brief Selectable full-batch loss gradients for one neuron.
  */
 
 #ifndef PERCEPTRON_OPTIMIZER_H
@@ -55,6 +55,22 @@ Optimizer optimizer(Perceptron *model);
  * @note This function does not change the model parameters.
  */
 float optimizer_backward_mse(Optimizer *self,
+        const float inputs[][PERCEPTRON_INPUT_COUNT],
+        const float targets[], size_t count);
+
+/**
+ * @brief Compute full-batch MSE gradients for ReLU activation.
+ * @param[in,out] self Optimizer receiving new gradients.
+ * @param[in] inputs Input rows of width PERCEPTRON_INPUT_COUNT.
+ * @param[in] targets Target values for the rows.
+ * @param[in] count Positive number of training rows.
+ * @return Mean squared error before the update.
+ * @pre self, its model, and both arrays are valid; count > 0.
+ * @pre All input values, targets, and model parameters are finite.
+ * @note The ReLU derivative is zero when the weighted sum is zero.
+ * @note This function does not change the model parameters.
+ */
+float optimizer_backward_mse_relu(Optimizer *self,
         const float inputs[][PERCEPTRON_INPUT_COUNT],
         const float targets[], size_t count);
 
