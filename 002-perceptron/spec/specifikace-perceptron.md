@@ -1,7 +1,7 @@
 # Specifikace experimentu 002-perceptron
 
 - **Projekt:** 002-perceptron
-- **Revize:** 18
+- **Revize:** 19
 - **Stav:** tři běhy implementovány; závěr srovnání čeká na odsouhlasení
 - **Porovnávané aktivace:** sigmoida a ReLU
 
@@ -346,8 +346,17 @@ Závěrečné spojité výstupy:
 | $(1,1)$ | 1 | $0{,}933477 / 0{,}933299$ | $0$ | $0{,}999999285$ |
 
 ReLU se seedem 42 nechala na obou platformách
-pozitivní vzorek $(1,1)$ v neaktivní oblasti.
-Výstup pro něj zůstal nulový a MSE na $0{,}25$.
+pozitivní vzorek $(1,1)$ v neaktivní oblasti:
+počáteční $z_{11}$ bylo na Linuxu asi $-0{,}892$
+a na Windows $-1{,}874$. Jeho chyba proto
+nepřispívala do gradientu. Na Windows byl aktivní
+jen vzorek $(0,0)$ s cílem $0$, který snižoval bias;
+obě váhy zůstaly beze změny. Na Linuxu byly zpočátku
+aktivní $(0,0)$ a $(0,1)$, ale po prvním kroku už
+jen $(0,0)$. Další kroky snižovaly bias a $(1,1)$
+zůstávalo neaktivní. Výstup pro něj zůstal nulový,
+takže jeho příspěvek k MSE byl
+$\frac{(1-0)^2}{4}=0{,}25$.
 Pevně inicializovaná ReLU se naopak přiblížila
 přesné tabulce AND. Stejný seed dal mezi Linuxem
 a Windows různé počáteční parametry `rand()`;
@@ -362,20 +371,30 @@ pokusů nebyl zaznamenán.
 
 ## 10. Navržený závěr
 
-Sigmoida při zvolených podmínkách aproximovala AND,
-ale MSE klesala postupně. ReLU s aktivním pevným
-startem dosáhla výstupů s odchylkou řádově $10^{-6}$,
-zatímco ReLU se stejnými náhodnými váhami jako
-sigmoida uvázla na $0{,}25$. Rozdíl mezi dvěma
-běhy ReLU ukazuje zásadní citlivost na inicializaci.
-Rychlejší pokles u pevného startu nelze připsat
-jen aktivační funkci, protože počáteční parametry
-se lišily. Zpomalení sigmoidálního běhu odpovídá
-gradientu MSE násobenému derivací sigmoidy.
+Pro přesnou tabulku AND na čtyřech binárních vstupech
+má ReLU reprezentační výhodu: konečné parametry
+$w_1=w_2=1$ a $b=-1$ dávají výstupy přesně
+$0,0,0,1$. Sigmoida s konečnými parametry vrací
+hodnoty přísně mezi $0$ a $1$, a proto na těchto
+cílech nemůže mít přesně nulovou MSE.
 
-Vyhodnocení proběhlo na trénovacích datech.
-Výsledek neprokazuje vhodnost aktivace pro jiné
-úlohy ani optimálnost MSE pro binární cíle.
+Naměřený běh s aktivním pevným startem této možnosti
+využil a dosáhl výstupů s odchylkou řádově $10^{-6}$.
+Sigmoida při stejném $N$, MSE, BGD a rychlosti učení
+AND aproximovala s MSE přibližně $0{,}0027$.
+Její zpomalování při malé chybě odpovídá gradientu
+MSE násobenému derivací sigmoidy. ReLU se stejným
+náhodným startem jako sigmoida však uvázla na
+MSE $0{,}25$: pozitivní vzorek ležel v neaktivní
+oblasti. Výsledek tedy ukazuje i citlivost ReLU
+na inicializaci. Rychlejší pokles u pevného startu
+nelze připsat jen aktivaci, protože počáteční
+parametry byly jiné.
+
+Z tohoto experimentu neplyne, že ReLU je obecně
+vhodnější pro binární výstup. Její výstup není
+omezen na $[0,1]$; sigmoida omezený výstup má.
+Vyhodnocení navíc používá jen trénovací tabulku.
 Závěr zatím není odsouhlasen.
 
 ## 11. Vazba na zdrojový kód
