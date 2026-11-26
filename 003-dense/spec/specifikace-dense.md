@@ -1,102 +1,68 @@
 # Specifikace experimentu 003-dense
 
 - **Projekt:** `003-dense`
-- **Revize:** pracovní návrh 2
-- **Stav:** rozpracováno, návrh architektury a implementace čekají na rozhodnutí vlastníka
+- **Revize:** pracovní návrh 3
+- **Stav:** rozpracováno; matematické vztahy a architektura se budou odvozovat společně
 
-## Cíl a rozsah
+## Cíl
 
-Navázat na afinní model z `001-LinearRegression` a na neuron s aktivací,
-dávkovou ztrátou a gradientem z `002-perceptron`. Ověřit matematiku
-vícevrstvého hustě propojeného modelu v jazyce C bez frameworku a rozšířit
-architekturu trénování o výpočet a ukládání gradientů více vrstev.
-Rychlost a spotřebu paměti měřit na stejných datech, přesnosti a hardwaru
-jako případný referenční program, než z nich vyvodíme závěr.
+Navázat na afinní model z `001-LinearRegression` a na neuron z
+`002-perceptron`. Cílem je pochopit a ověřit výpočet více spolupracujících
+neuronů, později jejich trénování a vhodnou architekturu programu v C bez
+frameworku. Výkon a spotřebu paměti vyhodnotíme měřením za srovnatelných
+podmínek; zatím o nich netvrdíme žádnou výhodu.
 
-Ověřovací úlohou je logická funkce XOR, kterou jediný neuron s afinním
-vstupem a rozhodovacím prahem nedokáže klasifikovat na všech čtyřech
-binárních vstupech. AND slouží jako kontrolní úloha navazující na
-experiment 002. Analytické gradienty porovnáme s numerickými aproximacemi
-a trénování ověříme na pravdivostní tabulce XOR. Úspěch na této tabulce
-sám o sobě nedokládá zobecnění na neviděná data.
+Zamýšlenou ověřovací úlohou je XOR, protože jeden neuron s afinním vstupem
+a rozhodovacím prahem neumí správně rozlišit všechny čtyři kombinace.
+AND může sloužit jako kontrolní úloha navazující na experiment 002.
+Zkouška na pravdivostní tabulce ověří naučení těchto čtyř vstupů, ne
+zobecnění na neviděná data.
 
-Potvrzené volby jsou aktivace ReLU a střední kvadratická chyba (MSE),
-stejně jako v běhu ReLU experimentu `002-perceptron`. Tvar modelu,
-způsob inicializace a měřitelné kritérium úspěchu zůstávají otevřené.
-První verze cílí na Linux x86-64.
+Prozatím potvrzenými prvky jsou aktivační funkce ReLU a střední
+kvadratická chyba (MSE) jako v experimentu 002. Přesná podoba sítě,
+trénování a podmínky experimentu čekají na společné odvození.
 
-## Konceptuální matematika
+## Dosud probraný výpočet
 
-Jeden neuron počítá skalární součin svých vstupů a vah, přičte
-vlastní bias a na afinní výsledek použije ReLU. Hustá vrstva $l$
-s $n_{l-1}$ vstupy a $n_l$ neurony uspořádá váhy neuronů do řádků
-matice $W^{(l)}\in\mathbb{R}^{n_l\times n_{l-1}}$. Bias každého
-neuronu tvoří složku sloupcového vektoru
-$\mathbf b^{(l)}\in\mathbb{R}^{n_l\times 1}$. Pro sloupcový vstup
-$\mathbf a^{(0)}=\mathbf x\in\mathbb{R}^{n_0\times 1}$ počítá
+Jeden neuron přijímá vektor vstupů. Každému vstupu přiřadí vlastní váhu,
+vypočte skalární součin, přičte vlastní bias a získanou hodnotu předá
+aktivační funkci. ReLU vrací tuto hodnotu, pokud je kladná, jinak nulu.
 
-$$
-\mathbf z^{(l)}=W^{(l)}\mathbf a^{(l-1)}+\mathbf b^{(l)},
-\qquad
-\mathbf a^{(l)}=\operatorname{ReLU}\!\left(\mathbf z^{(l)}\right),
-\qquad
-\operatorname{ReLU}(z)=\max(0,z).
-$$
+Pokud více neuronů zpracuje stejný vstup, každý má své váhy a svůj bias.
+Jejich výstupem je vektor s jednou hodnotou za každý neuron. Váhy lze
+uspořádat do matice tak, že jeden řádek obsahuje váhy jednoho neuronu.
+Pro vstup zapsaný jako sloupcový vektor pak jeden společný maticový
+součin spočítá skalární součiny všech neuronů. K výslednému sloupci se
+přičte sloupec jejich biasů a na každou složku se použije ReLU.
 
-Násobení matice a sloupcového vektoru vytvoří
-$n_l$ afinních výsledků; ReLU se použije na každou složku zvlášť.
-Zápis vstupu jako sloupce určuje orientaci rozměrů, nemění jeho hodnoty.
-Afinní vrstvy bez nelineární aktivace se složí do jediné afinní funkce.
+Tento popis zatím určuje dopředný výpočet jedné vrstvy. Zápis vstupu jako
+sloupce určuje uspořádání rozměrů, nikoli změnu hodnot vstupu.
 
-Pro $N>0$ vzorků a $q=n_L$ výstupů definujeme MSE jako průměr
-čtvercových chyb přes vzorky i výstupní složky:
+## Postup dalšího odvozování
 
-$$
-\operatorname{MSE}=\frac{1}{Nq}\sum_{k=1}^{N}
-\sum_{j=1}^{q}\left(a_{k,j}^{(L)}-y_{k,j}\right)^2.
-$$
+1. Zapsat výpočet jednoho neuronu na konkrétních číslech a ověřit jeho
+   výstup před ReLU i po ní.
+2. Položit vedle sebe dva neurony nad stejným vstupem a z jejich
+   skalárních součinů společně sestavit maticový zápis. U každého členu
+   zkontrolovat rozměr a význam.
+3. Teprve potom spojit výstup jedné vrstvy se vstupem další. Na malém
+   příkladu určit, jak se mění výstup modelu.
+4. Odvodit MSE a změnu její hodnoty při změně jediné váhy. Následně
+   odvodit gradienty skryté vrstvy a jejich použití při aktualizaci.
+5. Po odsouhlasení matematiky rozhodnout o topologii, reprezentaci dat,
+   vlastnictví paměti a rozhraních programu. Poté stanovit testy a
+   měřitelné kritérium úspěchu.
 
-Pro jeden výstup ($q=1$) je to stejná definice jako v experimentu 002.
-Zpětné šíření potřebuje vedle násobení maticí derivaci ReLU.
-Stejně jako v experimentu 002 volíme v bodě $z=0$ hodnotu derivace
-nula. Pro ztrátu $L$ jednoho vzorku definujeme
-$\boldsymbol\delta^{(l)}=\partial L/\partial\mathbf z^{(l)}$.
-Na výstupu a ve skryté vrstvě dává řetězové pravidlo
+Vzorce pro gradienty a rozhodnutí o konkrétní implementaci doplníme až
+po jejich odvození s vlastníkem projektu. Numerická kontrola gradientů
+může později ověřit správnost odvozených vztahů.
 
-$$
-\boldsymbol\delta^{(L)}=\frac{2}{q}
-\left(\mathbf a^{(L)}-\mathbf y\right)
-\odot\mathbf 1_{\mathbf z^{(L)}>0},
-$$
+## Architektura k dopracování
 
-$$
-\boldsymbol\delta^{(l)}=
-\left((W^{(l+1)})^{\mathsf T}\boldsymbol\delta^{(l+1)}\right)
-\odot\mathbf 1_{\mathbf z^{(l)}>0},
-$$
-
-$$
-\frac{\partial L}{\partial W^{(l)}}=
-\boldsymbol\delta^{(l)}(\mathbf a^{(l-1)})^{\mathsf T},
-\qquad
-\frac{\partial L}{\partial\mathbf b^{(l)}}=
-\boldsymbol\delta^{(l)}.
-$$
-
-Pro dávku se gradient MSE získá zprůměrováním těchto příspěvků
-jednotlivých vzorků. Indikátor $\mathbf 1_{\mathbf z>0}$ má v aktivních
-složkách hodnotu jedna, jinak nula.
-
-## Návaznost a otevřená architektura
-
-Z předchozích experimentů přebíráme oddělení modelu, optimalizátoru,
-Runneru a jednotkových testů. Runner vlastní data a řídí běh. Model počítá
-predikci, optimalizátor počítá gradient a mění parametry. Přesné rozhraní,
-vlastnictví pracovních polí a způsob popisu rozměrů vrstev zatím nejsou
-určené. Knihovna `lib/alloc` je dostupná pro pracovní paměť, která se
-nevejde na zásobník.
-Při návrhu rozhraní budeme hodnotit závislost programu na konkrétní
-topologii, aktivaci a ztrátě spolu s cenou případné obecnosti.
+Z experimentu 002 známe oddělení Runneru, modelu a optimalizátoru.
+Ještě není rozhodnuto, jak budou reprezentované vrstvy, kdo bude
+vlastnit mezivýsledky a zda budou rozměry určené při překladu nebo běhu.
+Tyto volby mají dopad na složitost programu, výpočetní čas i paměť.
 
 ```mermaid
 classDiagram
@@ -104,51 +70,23 @@ classDiagram
     class Runner
     class DenseModel
     class Optimizer
-    class Alloc
     Runner ..> DenseModel : vytváří a vyhodnocuje
     Runner ..> Optimizer : řídí trénování
-    Optimizer ..> DenseModel : čte a mění parametry
-    Runner ..> Alloc : podle zvolené správy paměti
-    Optimizer ..> Alloc : podle zvolené správy paměti
+    Optimizer ..> DenseModel : používá parametry
 ```
-
-## Varianty k rozhodnutí
-
-| Volba | Přesnost a ověření | Čas a paměť | Složitost a riziko |
-|---|---|---|---|
-| Malá síť s pevnými rozměry při překladu | Jednodušší ruční kontrola gradientů a reprodukovatelná úloha | Bez popisu vrstev za běhu, pracovní pole mohou být malá | Změna topologie vyžaduje překlad; hrozí řešení příliš úzce svázané s jednou sítí |
-| Rozměry vrstev určené při běhu | Stejná matematika, lze porovnat více topologií | Parametry a pracovní pole potřebují správu paměti, vznikají indexové výpočty | Vyšší nároky na kontrolu rozměrů, vlastnictví a selhání alokace |
-| Jeden vzorek po druhém s akumulací gradientu dávky | Snadná kontrola každého příspěvku | Pracovní aktivace rostou s modelem, nikoli s počtem vzorků; méně možností pro dávkovou optimalizaci | Jednodušší životnost polí, více průchodů výpočtem |
-| Aktivace celé dávky v pracovních polích | Vhodné pro porovnání dávkových výpočtů | Paměť roste s velikostí dávky; potenciál pro lepší využití procesoru až po měření | Složitější indexování a správa pracovních polí |
-
-Žádná varianta dosud není vybrána. Před implementací je potřeba určit
-topologii, přesnost čísel, inicializaci,
-režim dávky a způsob uložení parametrů i mezivýsledků. Volba ovlivní
-testy gradientů, případnou referenční implementaci a měření.
-
-## Plán ověření
-
-- Ručně vypočtený dopředný průchod a gradient malé sítě.
-- Numerická kontrola gradientů konečným rozdílem v bodech, kde jsou
-  zvolené aktivace diferencovatelné.
-- Test aktualizace parametrů, rozměrů a selhání alokace podle vybrané
-  architektury.
-- Měření výsledné ztráty na XOR a času i vrcholové paměti
-  za reprodukovatelných podmínek.
 
 ## Závěr
 
-Zatím nelze hodnotit přesnost, výkon ani paměť. Metoda, experimentální
-podmínky a kritérium úspěchu čekají na rozhodnutí vlastníka.
+Experiment zatím nemá výsledky. Následujícím krokem je společně odvodit
+maticový zápis jedné vrstvy na malém číselném příkladu.
 
 ## Slovník
 
-- **Hustá vrstva:** Vrstva, v níž každý výstupní neuron používá všechny
-  výstupy předchozí vrstvy.
-- **Aktivace:** Nelineární funkce použitá na afinní výstup vrstvy.
-- **Gradient:** Derivace ztráty podle parametru, která určuje lokální směr
-  jeho změny při trénování.
-- **Zpětné šíření:** Výpočet gradientů od výstupu k dřívějším vrstvám
-  pomocí řetězového pravidla.
-- **Dávka:** Skupina vzorků, jejichž příspěvky tvoří jednu aktualizaci
-  parametrů.
+- **Neuron:** Výpočetní jednotka s vlastními vahami a biasem, která
+  předává svůj afinní výsledek aktivační funkci.
+- **Hustá vrstva:** Skupina neuronů, z nichž každý používá všechny
+  hodnoty stejného vstupního vektoru.
+- **Bias:** Vlastní přičítaná hodnota neuronu před aktivací.
+- **ReLU:** Aktivace, která záporné a nulové hodnoty převádí na nulu.
+- **MSE:** Průměr druhých mocnin rozdílů mezi výstupem a požadovanou
+  hodnotou.
